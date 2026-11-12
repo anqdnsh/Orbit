@@ -1,0 +1,62 @@
+# ORBIT
+
+A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Android 13+), built for the Book Cover Keyboard. It's liquid glass in light or dark mode, it has no libraries, and it opens instantly.
+
+## What Phase 1 does
+
+- **Hotkey from any app:** Alt + Space (or Ctrl + Alt + Space / Meta + Space) shows the panel as an overlay. This needs the accessibility switch, see Setup.
+- **Search:** apps (including a work profile), 24 system settings pages, a calculator (`128*1.06`, `1,250 x 3`, `2^10`), and a web search fallback.
+- **Enter opens the first result.** The top hit is always highlighted. The arrow keys move the highlight.
+- **More keys:** Ctrl + Enter opens a pop-up window, Shift + Enter opens side by side, Ctrl + 1–8 opens that result directly, Tab switches filters, Ctrl + C copies a calculator answer, Esc closes.
+- **It learns:** things you open often or recently rank higher. That data stays on the tablet.
+- **Light / Dark / Match system**, set in ORBIT settings (search "orbit" or press Ctrl + ,).
+- **Liquid glass:** uses Android's real cross-window blur. When One UI turns blur off (for example in battery saver), it switches to a frosted tint.
+- **Other ways in:** the app icon, a Quick Settings tile, and Android's own per-app keyboard shortcut if your One UI version offers it.
+
+## System controls
+
+Type a command or press Tab to the **System** filter. Each result says what Enter will do.
+
+| Runs now | After a one-time permission | Opens Settings (Android doesn't let apps do it) |
+|---|---|---|
+| Restart / Shut down / Power menu (opens Samsung's power menu, where you tap the final option) | Brightness (`brightness 70`), auto brightness | Wi-Fi on/off (pop-up panel), NFC (panel) |
+| Lock screen, Screenshot | Auto-rotate | Bluetooth, Dark mode, Battery saver |
+| Notifications, Quick Settings, Recent apps, Split screen, Home | Do Not Disturb | Hotspot, Location, Airplane mode |
+| Play/pause, Next, Previous, Volume up/down, `volume 40`, Mute, Torch | | |
+
+The "Runs now" power and screen actions use the hotkey (accessibility) service. Volume, media and torch work without it.
+
+## Build the APK
+
+No Android Studio needed:
+
+1. Push this folder to a GitHub repo.
+2. Go to **Actions › Build APK**. It runs on every push. Download `orbit-apk` from the run.
+3. (Optional) To make each new APK install over the old one, add a signing key as repo secrets: `ORBIT_KEYSTORE_B64`, `ORBIT_KEYSTORE_PASSWORD`, `ORBIT_KEY_ALIAS`, `ORBIT_KEY_PASSWORD`. Without them, each run uses a different debug key, so you have to uninstall before updating.
+
+Locally: `gradle assembleRelease` (Gradle 8.14+, JDK 17, Android SDK 36).
+
+## Setup on the tablet
+
+1. Install the APK.
+2. Open ORBIT settings and tap **Open Accessibility settings**. Switch on **ORBIT keyboard hotkey**.
+3. If the switch is greyed out (Android blocks this for sideloaded apps): **Settings › Apps › ORBIT › ⋮ › Allow restricted settings**, then repeat step 2.
+
+The accessibility service only checks key presses for the hotkey (`canRetrieveWindowContent=false`). It never reads the screen.
+
+## Known limits
+
+- Pop-up and side-by-side are requests. One UI decides whether the current mode honours them. In DeX they work as freeform windows. In normal tablet mode, side by side needs split screen to be possible for that app.
+- App shortcuts (like "New note") need ORBIT to be the default home app on Android, so they're left for later.
+- Android doesn't allow clipboard history in the background, so ORBIT won't offer it.
+
+## Code map
+
+```
+OrbitAccessibilityService  hotkey + overlay window (the fast path)
+SearchActivity             same panel in a floating window (icon / tile / shortcut)
+ui/OrbitView               panel, keyboard handling (Enter → first result)
+ui/GlassPanel, Palette     glass look, light & dark colours
+search/*                   app index, fuzzy matching, calculator, settings list, ranking
+Launcher                   opening results (normal / pop-up / side by side)
+```

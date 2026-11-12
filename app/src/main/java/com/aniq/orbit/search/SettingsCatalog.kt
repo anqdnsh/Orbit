@@ -1,0 +1,58 @@
+package com.aniq.orbit.search
+
+/** System settings pages ORBIT can jump to. Each lists fallbacks in case One UI hides an action. */
+object SettingsCatalog {
+    private fun s(id: String, title: String, keywords: List<String>, vararg actions: String) =
+        SettingEntry(id, title, keywords, actions.toList() + "android.settings.SETTINGS")
+
+    val entries: List<SettingEntry> = listOf(
+        s("wifi", "Wi-Fi", listOf("wifi", "wireless", "internet", "network"),
+            "android.settings.WIFI_SETTINGS"),
+        s("internet", "Internet panel", listOf("internet", "connectivity", "mobile data"),
+            "android.settings.panel.action.INTERNET_CONNECTIVITY", "android.settings.WIRELESS_SETTINGS"),
+        s("bluetooth", "Bluetooth", listOf("bt", "pair", "headphones", "earbuds", "buds"),
+            "android.settings.BLUETOOTH_SETTINGS"),
+        s("display", "Display", listOf("brightness", "dark mode", "screen", "refresh rate", "font size"),
+            "android.settings.DISPLAY_SETTINGS"),
+        s("sound", "Sounds and vibration", listOf("sound", "volume", "ringtone", "vibration"),
+            "android.settings.SOUND_SETTINGS"),
+        s("volume", "Volume panel", listOf("volume", "media volume"),
+            "android.settings.panel.action.VOLUME", "android.settings.SOUND_SETTINGS"),
+        s("notifications", "Notifications", listOf("notification", "alerts", "app notifications"),
+            "android.settings.ALL_APPS_NOTIFICATION_SETTINGS", "android.settings.NOTIFICATION_SETTINGS"),
+        s("dnd", "Do not disturb", listOf("dnd", "focus", "silence", "zen"),
+            "android.settings.ZEN_MODE_SETTINGS", "android.settings.ZEN_MODE_PRIORITY_SETTINGS"),
+        s("battery", "Battery", listOf("power", "battery usage", "charging"),
+            "android.intent.action.POWER_USAGE_SUMMARY"),
+        s("apps", "Apps", listOf("applications", "app info", "uninstall", "manage apps"),
+            "android.settings.MANAGE_APPLICATIONS_SETTINGS", "android.settings.APPLICATION_SETTINGS"),
+        s("default_apps", "Default apps", listOf("default browser", "launcher", "default"),
+            "android.settings.MANAGE_DEFAULT_APPS_SETTINGS"),
+        s("storage", "Storage", listOf("space", "files", "memory"),
+            "android.settings.INTERNAL_STORAGE_SETTINGS"),
+        s("keyboard", "Physical keyboard", listOf("keyboard", "book cover", "shortcuts", "keyboard shortcuts", "layout"),
+            "android.settings.HARD_KEYBOARD_SETTINGS", "android.settings.INPUT_METHOD_SETTINGS"),
+        s("language", "Language and input", listOf("language", "input", "on-screen keyboard"),
+            "android.settings.INPUT_METHOD_SETTINGS", "android.settings.LOCALE_SETTINGS"),
+        s("accessibility", "Accessibility", listOf("a11y", "hotkey service"),
+            "android.settings.ACCESSIBILITY_SETTINGS"),
+        s("location", "Location", listOf("gps"),
+            "android.settings.LOCATION_SOURCE_SETTINGS"),
+        s("security", "Security and privacy", listOf("lock screen", "password", "fingerprint", "privacy"),
+            "android.settings.SECURITY_SETTINGS"),
+        s("date", "Date and time", listOf("time", "clock", "time zone"),
+            "android.settings.DATE_SETTINGS"),
+        s("airplane", "Airplane mode", listOf("flight mode", "aeroplane"),
+            "android.settings.AIRPLANE_MODE_SETTINGS"),
+        s("nfc", "NFC", listOf("tap to pay", "contactless"),
+            "android.settings.NFC_SETTINGS"),
+        s("developer", "Developer options", listOf("dev", "usb debugging", "adb"),
+            "android.settings.APPLICATION_DEVELOPMENT_SETTINGS"),
+        s("wallpaper", "Wallpaper", listOf("background", "theme"),
+            "android.intent.action.SET_WALLPAPER"),
+        s("about", "About tablet", listOf("software", "model", "version", "device info"),
+            "android.settings.DEVICE_INFO_SETTINGS"),
+        s("update", "Software update", listOf("update", "one ui", "firmware"),
+            "android.settings.SYSTEM_UPDATE_SETTINGS"),
+    )
+}

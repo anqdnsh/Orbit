@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ORBIT</string>
+    <string name="settings_title">ORBIT settings</string>
+    <string name="settings_short">Settings</string>
+    <string name="a11y_label">ORBIT keyboard hotkey</string>
+    <string name="a11y_desc">Lets ORBIT listen for its keyboard shortcut (Alt + Space by default) so you can open it from any app. ORBIT only checks key presses for that shortcut. It does not read what is on your screen and does not save or send anything you type.</string>
+</resources>
