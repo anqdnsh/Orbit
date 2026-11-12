@@ -68,9 +68,9 @@ class RowView(context: Context, private val pal: Palette) : LinearLayout(context
 
     fun setSelected(selected: Boolean, index: Int) {
         val it = item ?: return
-        val fg = if (selected) pal.onAccent else pal.text
-        val fgSub = if (selected) (pal.onAccent and 0x00FFFFFF) or 0xE6000000.toInt() else pal.sub
-        bg.setColor(if (selected) pal.accent else 0x00000000)
+        val fg = if (selected) pal.onSelection else pal.text
+        val fgSub = if (selected) pal.onSelectionSub else pal.sub
+        bg.setColor(if (selected) pal.selection else 0x00000000)
         title.setTextColor(fg)
         sub.setTextColor(fgSub)
         key.setTextColor(fgSub)
@@ -80,7 +80,7 @@ class RowView(context: Context, private val pal: Palette) : LinearLayout(context
             else -> ""
         }
         if (it !is Item.App) {
-            tileBg.setColor(if (selected) 0x40FFFFFF else pal.tile)
+            tileBg.setColor(if (selected) 0x29FFFFFF else pal.tile)
             icon.setImageDrawable(StrokeIcon(it.glyph, fg))
         }
         contentDescription = "${it.title}, ${it.subtitle}"

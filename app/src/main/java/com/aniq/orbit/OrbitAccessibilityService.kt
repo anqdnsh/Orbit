@@ -90,7 +90,8 @@ class OrbitAccessibilityService : AccessibilityService(), OrbitView.Host {
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             y = (dm.heightPixels * 0.11f).toInt()
-            dimAmount = if (blur) 0.12f else 0.28f
+            // Dark mode dims more so wallpaper colour doesn't tint the charcoal glass.
+            dimAmount = if (com.aniq.orbit.ui.Palette.isDark(this@OrbitAccessibilityService)) 0.30f else if (blur) 0.12f else 0.28f
             if (blur) blurBehindRadius = dpi(26f)
             softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
             title = "ORBIT"

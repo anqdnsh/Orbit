@@ -189,8 +189,8 @@ class OrbitView(
     private fun styleChips() {
         chips.forEachIndexed { i, c ->
             val on = Filter.entries[i] == filter
-            (c.background as GradientDrawable).setColor(if (on) pal.accent else pal.chip)
-            c.setTextColor(if (on) pal.onAccent else pal.text)
+            (c.background as GradientDrawable).setColor(if (on) pal.selection else pal.chip)
+            c.setTextColor(if (on) pal.onSelection else pal.text)
         }
     }
 

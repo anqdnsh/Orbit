@@ -16,8 +16,11 @@ class Palette(
     val divider: Int,
     val chip: Int,
     val tile: Int,
-    val accent: Int,
+    val accent: Int,        // buttons and "on" status
     val onAccent: Int,
+    val selection: Int,     // highlighted result row / active filter chip
+    val onSelection: Int,
+    val onSelectionSub: Int,
     val pageBg: Int,        // settings screen
     val card: Int,
 ) {
@@ -35,25 +38,32 @@ class Palette(
             tile = 0x99FFFFFF.toInt(),
             accent = 0xFF1F5FD6.toInt(),
             onAccent = 0xFFFFFFFF.toInt(),
+            selection = 0xFF1F5FD6.toInt(),
+            onSelection = 0xFFFFFFFF.toInt(),
+            onSelectionSub = 0xE6FFFFFF.toInt(),
             pageBg = 0xFFEEF1F7.toInt(),
             card = 0xFFFFFFFF.toInt(),
         )
 
+        /** Neutral charcoal, Raycast-style: no blue cast, grey highlight, light primary buttons. */
         val DARK = Palette(
             dark = true,
-            fill = 0x9E141925.toInt(),
-            fillOpaque = 0xF5141925.toInt(),
-            strokeTop = 0x66FFFFFF,
-            strokeBottom = 0x14FFFFFF,
-            text = 0xFFF2F5FA.toInt(),
-            sub = 0xFFA9B4C8.toInt(),
-            divider = 0x1FFFFFFF,
-            chip = 0x1FFFFFFF,
-            tile = 0x1FFFFFFF,
-            accent = 0xFF2F6BE0.toInt(),
-            onAccent = 0xFFFFFFFF.toInt(),
-            pageBg = 0xFF0E1320.toInt(),
-            card = 0xFF1A2130.toInt(),
+            fill = 0xC71C1C1E.toInt(),
+            fillOpaque = 0xF71C1C1E.toInt(),
+            strokeTop = 0x47FFFFFF,
+            strokeBottom = 0x0DFFFFFF,
+            text = 0xFFEDEDED.toInt(),
+            sub = 0xFF9B9B9F.toInt(),
+            divider = 0x14FFFFFF,
+            chip = 0x12FFFFFF,
+            tile = 0x14FFFFFF,
+            accent = 0xFFEDEDED.toInt(),
+            onAccent = 0xFF1C1C1E.toInt(),
+            selection = 0x26FFFFFF,
+            onSelection = 0xFFFFFFFF.toInt(),
+            onSelectionSub = 0xFFB4B4B8.toInt(),
+            pageBg = 0xFF161617.toInt(),
+            card = 0xFF202022.toInt(),
         )
 
         fun isDark(ctx: Context): Boolean = when (Prefs.theme(ctx)) {
