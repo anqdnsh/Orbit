@@ -196,8 +196,7 @@ object Commands {
                 if (OrbitAccessibilityService.instance == null) "Needs the OrbitSearch hotkey switch (opens setup)"
                 else when (e.how) {
                     How.AREA -> "Drag a box  ·  saved and copied  ·  Alt + Shift + S anywhere"
-                    How.FOCUS -> if (ctx.getSystemService(NotificationManager::class.java).isNotificationPolicyAccessGranted)
-                        "Ring timer  ·  turns on Do Not Disturb until it ends" else "Ring timer  ·  allow DND control in settings to silence alerts"
+                    How.FOCUS -> "Ring timer  ·  chimes when done"
                     How.TIMER -> "Ring timer  ·  chimes when done"
                     How.TIMER_SHOW -> if (FocusTimer.state == FocusTimer.State.IDLE) "No timer running" else "Opens the timer"
                     else -> if (KeepAwake.isOn) "Now: ${KeepAwake.label()}" else "Screen stays on, then sleeps normally"

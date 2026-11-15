@@ -5,7 +5,7 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 ## What Phase 1 does
 
 - **Hotkey from any app:** Alt + Space (or Ctrl + Alt + Space / Meta + Space) shows the panel as an overlay. This needs the accessibility switch, see Setup.
-- **Search:** apps (including a work profile), 24 system settings pages, a calculator (`128*1.06`, `1,250 x 3`, `2^10`), and a web search fallback.
+- **Search:** apps (including a work profile), 24 system settings pages, a calculator answer as a result row (`128*1.06`, `1,250 x 3`, `2^10`; Enter copies it, or type "calculator" for the Calculator app), and a web search fallback.
 - **Enter opens the first result.** The top hit is always highlighted. The arrow keys move the highlight.
 - **More keys:** Ctrl + Enter opens a pop-up window, Shift + Enter opens side by side, Ctrl + 1–8 opens that result directly, Ctrl + Tab switches filters, Ctrl + C copies a calculator answer, Esc closes.
 - **It learns:** things you open often or recently rank higher. That data stays on the tablet.
@@ -17,9 +17,8 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 
 - **Area screenshot:** press **Alt + Shift + S** anywhere (or type "snip"). The screen freezes, you drag a box, and the crop is saved to Pictures/Screenshots/OrbitSearch and copied. Enter takes the whole screen. Apps that block screenshots (e.g. banking) come out black.
 - **File search (Spotlight-style):** type a file name, or use the **Files** filter. Press **↓ then Space** (or **Shift + Space**) to preview images, videos, PDFs (first page) and text, and ↓ ↑ to flip through files. It needs Android's "All files access" and searches the system's own file index, so nothing scans in the background.
-- **Focus timer:** `focus 25`, `focus 50`, `timer 10`, `timer 1h`. A glass card with a smooth 120 Hz ring and rolling digits. Space pauses, + adds 5 min, and Esc shrinks it to a pill at the top. Focus sessions turn on Do Not Disturb (if allowed) and put it back afterwards. It chimes when done, even if the tablet was asleep.
+- **Focus timer:** `focus 25`, `focus 50`, `timer 10`, `timer 1h`. A glass card with a smooth 120 Hz ring and rolling digits. Space pauses, + adds 5 min, and Esc (or tapping outside) shrinks it to a small ring bubble in the bottom-right corner; tap the bubble to open it again. It leaves Do Not Disturb alone. It chimes when done, even if the tablet was asleep.
 - **Keep awake:** `awake 30`, `awake 1h`, "keep awake until I turn it off", "keep awake off". It uses an invisible keep-screen-on window, with no wake locks.
-- **Calculator card:** typing maths shows a big answer, your recent results and a small keypad for touch.
 - **Currency:** `100 usd to myr`, `rm50 in sgd`, `250 eur`. Rates come from Frankfurter (central-bank reference rates, no key), with ExchangeRate-API as a backup. They're fetched only when you convert, then cached for 12 hours.
 - **Ctrl + /** shows every shortcut inside OrbitSearch.
 

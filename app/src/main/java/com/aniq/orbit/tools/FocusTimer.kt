@@ -1,7 +1,6 @@
 package com.aniq.orbit.tools
 
 import android.app.AlarmManager
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -17,7 +16,6 @@ import android.os.VibratorManager
 /**
  * The focus timer's clock. Time is kept as an end moment on the elapsed-realtime clock, so it
  * stays exact through screen-off and rotation. An exact alarm wakes the tablet when it finishes.
- * Focus sessions switch Do Not Disturb on (if allowed) and put it back afterwards.
  */
 object FocusTimer {
     enum class State { IDLE, RUNNING, PAUSED, DONE }
@@ -31,7 +29,6 @@ object FocusTimer {
     private var endAt = 0L
     private var pausedLeft = 0L
     private var lastMinutes = 25
-    private var weTurnedOnDnd = false
 
     private val main = Handler(Looper.getMainLooper())
     private val listeners = LinkedHashSet<() -> Unit>()
@@ -60,7 +57,6 @@ object FocusTimer {
         totalMs = minutes * 60_000L
         endAt = SystemClock.elapsedRealtime() + totalMs
         state = State.RUNNING
-        if (isFocus) dndOn(ctx) else dndRestore(ctx)
         schedule(ctx)
         changed()
     }
@@ -88,7 +84,6 @@ object FocusTimer {
 
     fun end(ctx: Context) {
         unschedule(ctx)
-        dndRestore(ctx)
         state = State.IDLE
         changed()
     }
@@ -98,7 +93,6 @@ object FocusTimer {
         if (state != State.RUNNING) return
         if (remaining() > 500) { schedule(ctx); return } // woke early: re-arm
         unschedule(ctx)
-        dndRestore(ctx)
         state = State.DONE
         chime(ctx)
         changed()
@@ -134,26 +128,6 @@ object FocusTimer {
         main.removeCallbacks(finisher)
         try { ctx.getSystemService(AlarmManager::class.java).cancel(pending(ctx)) } catch (_: Exception) {}
     }
-
-    // ---------- Do Not Disturb ----------
-
-    private fun dndOn(ctx: Context) {
-        val nm = ctx.getSystemService(NotificationManager::class.java)
-        if (!nm.isNotificationPolicyAccessGranted) return
-        if (nm.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALL) {
-            nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
-            weTurnedOnDnd = true
-        }
-    }
-
-    private fun dndRestore(ctx: Context) {
-        if (!weTurnedOnDnd) return
-        weTurnedOnDnd = false
-        val nm = ctx.getSystemService(NotificationManager::class.java)
-        if (nm.isNotificationPolicyAccessGranted) nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
-    }
-
-    fun dndActive(): Boolean = weTurnedOnDnd
 
     // ---------- done ----------
 

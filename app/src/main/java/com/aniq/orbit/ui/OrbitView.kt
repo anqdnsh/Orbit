@@ -73,13 +73,12 @@ class OrbitView(
     private var navigating = false
     private val onIndexChanged: () -> Unit = { if (mode == Mode.SEARCH) refresh() }
 
-    // Calculator / currency card
+    // Currency card
     private val calcBox = LinearLayout(context)
     private val calcLabel = TextView(context)
     private val calcExpr = TextView(context)
     private val calcAnswer = TextView(context)
     private val calcRecent = LinearLayout(context)
-    private val keypad = LinearLayout(context)
 
     // Quick AI
     private val answerBox = LinearLayout(context)
@@ -269,47 +268,7 @@ class OrbitView(
         left.addView(calcRecent)
         calcBox.addView(left, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
 
-        // Small keypad for touch, next to the answer.
-        keypad.orientation = LinearLayout.VERTICAL
-        val keys = listOf(listOf("C", "(", ")", "÷"), listOf("7", "8", "9", "×"), listOf("4", "5", "6", "−"),
-            listOf("1", "2", "3", "+"), listOf("0", ".", "⌫", "="))
-        for (line in keys) {
-            val r = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-            for (k in line) {
-                val isEq = k == "="
-                val isOp = k in listOf("÷", "×", "−", "+")
-                r.addView(label(16f, if (isEq) pal.onAccent else pal.text).apply {
-                    text = k
-                    gravity = Gravity.CENTER
-                    background = GradientDrawable().apply {
-                        cornerRadius = context.dp(11f)
-                        setColor(when {
-                            isEq -> pal.accent
-                            isOp -> if (pal.dark) 0x24FFFFFF else 0x1A0B1220
-                            else -> if (pal.dark) 0x10FFFFFF else 0x0D0B1220
-                        })
-                    }
-                    isClickable = true
-                    setOnClickListener { keypadPress(k) }
-                }, LinearLayout.LayoutParams(context.dpi(50f), context.dpi(40f)).apply { setMargins(context.dpi(3f), context.dpi(3f), 0, 0) })
-            }
-            keypad.addView(r)
-        }
-        calcBox.addView(keypad, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            marginStart = context.dpi(10f)
-        })
         return calcBox
-    }
-
-    private fun keypadPress(k: String) {
-        val t = input.text ?: return
-        val pos = input.selectionStart.coerceAtLeast(0)
-        when (k) {
-            "C" -> input.setText("")
-            "⌫" -> if (pos > 0) t.delete(pos - 1, pos)
-            "=" -> open(0, Launcher.Mode.NORMAL)
-            else -> t.insert(pos, when (k) { "÷" -> "/"; "×" -> "*"; "−" -> "-"; else -> k })
-        }
     }
 
     private fun buildAnswerBox(): View = answerBox.apply {
@@ -477,10 +436,10 @@ class OrbitView(
     }
 
     private fun updateCalcCard() {
+        // Maths answers show as a normal result row; only currency gets the big card.
         val top = results.firstOrNull()
-        val calc = top as? Item.Calc
         val money = (top as? Item.Money)?.takeIf { it.value != null }
-        if (mode != Mode.SEARCH || (calc == null && money == null)) {
+        if (mode != Mode.SEARCH || money == null) {
             calcBox.visibility = GONE
             return
         }
@@ -490,17 +449,9 @@ class OrbitView(
             calcBox.translationY = -context.dp(6f)
             calcBox.animate().alpha(1f).translationY(0f).setDuration(180).setInterpolator(Motion.easeOut).start()
         }
-        if (calc != null) {
-            calcLabel.text = "CALCULATOR"
-            calcExpr.text = pretty(calc.expr) + " ="
-            calcAnswer.text = calc.value
-            keypad.visibility = VISIBLE
-        } else if (money != null) {
-            calcLabel.text = "CURRENCY"
-            calcExpr.text = "${money.q.amount.toString().removeSuffix(".0")} ${money.q.from} → ${money.q.to}"
-            calcAnswer.text = money.title
-            keypad.visibility = GONE
-        }
+        calcLabel.text = "CURRENCY"
+        calcExpr.text = "${money.q.amount.toString().removeSuffix(".0")} ${money.q.from} → ${money.q.to}"
+        calcAnswer.text = money.title
         calcRecent.removeAllViews()
         val recent = CalcHistory.list(context).take(3)
         if (recent.isNotEmpty()) {

@@ -387,7 +387,7 @@ class GuideActivity : Activity() {
             if (files) null else "Allow") {
             startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName")))
         }, spaced(18f))
-        body.addView(statusRow(dnd, "Do Not Disturb", "Focus timer silences alerts until it ends",
+        body.addView(statusRow(dnd, "Do Not Disturb", "Lets \"dnd\" switch Do Not Disturb on and off",
             if (dnd) null else "Allow") { startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) }, spaced(10f))
         body.addView(statusRow(write, "Brightness & rotation", "\"brightness 70\" and auto-rotate run straight away",
             if (write) null else "Allow") {
