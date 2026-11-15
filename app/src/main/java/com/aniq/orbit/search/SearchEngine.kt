@@ -1,5 +1,6 @@
 package com.aniq.orbit.search
 
+import com.aniq.orbit.Feature
 import android.content.Context
 import com.aniq.orbit.CommandEntry
 import com.aniq.orbit.Commands
@@ -31,16 +32,16 @@ object SearchEngine {
     private fun searchInner(ctx: Context, raw: String, filter: Filter, onAsync: () -> Unit): List<Item> {
         val q = Text.normalize(raw)
         val trimmed = raw.trim()
-        if (filter == Filter.FILES) return files(ctx, trimmed, onAsync, MAX)
+        if (filter == Filter.FILES) return if (Feature.FILES.on(ctx)) files(ctx, trimmed, onAsync, MAX) else emptyList()
         if (raw.isBlank()) return suggestions(ctx, filter)
 
         val out = ArrayList<Item>(MAX)
         if (filter == Filter.ALL) {
-            Calc.evaluate(raw)?.let { out += Item.Calc(trimmed, it) }
-            Currency.parse(raw)?.let { out += money(ctx, it, onAsync) }
+            if (Feature.CALC.on(ctx)) Calc.evaluate(raw)?.let { out += Item.Calc(trimmed, it) }
+            if (Feature.CURRENCY.on(ctx)) Currency.parse(raw)?.let { out += money(ctx, it, onAsync) }
         }
         if (filter == Filter.ALL || filter == Filter.SYSTEM) {
-            Commands.parametric(raw)?.let { (e, v) -> out += command(ctx, e, v) }
+            Commands.parametric(raw)?.let { (e, v) -> if (Feature.commandOn(ctx, e.id)) out += command(ctx, e, v) }
         }
 
         // Score first, build result rows only for the winners (commands read live device state).
@@ -54,6 +55,7 @@ object SearchEngine {
         }
         if (filter == Filter.ALL || filter == Filter.SYSTEM) {
             for (e in Commands.entries) {
+                if (!Feature.commandOn(ctx, e.id)) continue
                 var s = Matcher.score(q, e.norm, e.initials)
                 for (k in e.keywordNorms) s = maxOf(s, Matcher.score(q, k, "") - 40)
                 // Typing a command's exact name ("dex", "restart") puts it first, so Enter runs it.
@@ -62,7 +64,7 @@ object SearchEngine {
             }
         }
         if (filter == Filter.ALL || filter == Filter.SETTINGS) {
-            for (e in SettingsCatalog.entries) {
+            if (Feature.SETTINGS_PAGES.on(ctx)) for (e in SettingsCatalog.entries) {
                 var s = Matcher.score(q, e.norm, e.initials)
                 for (k in e.keywordNorms) s = maxOf(s, Matcher.score(q, k, "") - 60)
                 // Small penalty so an app or command wins a tie with a settings page of the same name.
@@ -75,14 +77,13 @@ object SearchEngine {
         }
 
         scored.sortByDescending { it.second }
-        val fileRows = if (filter == Filter.ALL) files(ctx, trimmed, onAsync, 3) else emptyList()
-        val tail = if (filter == Filter.ALL) 1 else 0
+        val fileRows = if (filter == Filter.ALL && Feature.FILES.on(ctx)) files(ctx, trimmed, onAsync, 3) else emptyList()
+        val web = filter == Filter.ALL && Feature.WEB.on(ctx)
+        val tail = if (web) 1 else 0
         val room = MAX - out.size - tail - fileRows.size
         scored.take(room.coerceAtLeast(0)).forEach { out += it.first() }
         out += fileRows
-        if (filter == Filter.ALL) {
-            out += Item.Web(trimmed)
-        }
+        if (web) out += Item.Web(trimmed)
         return out.take(MAX)
     }
 
@@ -118,10 +119,12 @@ object SearchEngine {
 
     private fun suggestions(ctx: Context, filter: Filter): List<Item> = when (filter) {
         Filter.SETTINGS -> SettingsCatalog.entries
+            .filter { Feature.SETTINGS_PAGES.on(ctx) }
             .sortedByDescending { Usage.boost("set:" + it.id) }
             .take(MAX - 1)
             .map<SettingEntry, Item> { Item.Setting(it) } + Item.OrbitSettings
         Filter.SYSTEM -> Commands.entries
+            .filter { Feature.commandOn(ctx, it.id) }
             .sortedByDescending { Usage.boost("cmd:" + it.id) }
             .take(MAX)
             .map { command(ctx, it, null) }

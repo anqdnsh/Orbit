@@ -379,8 +379,17 @@ class OrbitView(
         addView(previewTextScroll)
     }
 
+    /** A filter chip hides when everything it would show is switched off in settings. */
+    private fun filterOn(f: Filter): Boolean = when (f) {
+        Filter.FILES -> com.aniq.orbit.Feature.FILES.on(context)
+        Filter.SETTINGS -> com.aniq.orbit.Feature.SETTINGS_PAGES.on(context)
+        else -> true
+    }
+
     private fun styleChips() {
+        if (!filterOn(filter)) filter = Filter.ALL
         chips.forEachIndexed { i, c ->
+            c.visibility = if (filterOn(Filter.entries[i])) VISIBLE else GONE
             val on = Filter.entries[i] == filter
             (c.background as GradientDrawable).setColor(if (on) pal.accent else pal.chip)
             c.setTextColor(if (on) pal.onAccent else pal.text)
@@ -597,9 +606,10 @@ class OrbitView(
             }
             KeyEvent.KEYCODE_TAB -> {
                 if (ctrl) {
-                    val n = Filter.entries.size
+                    val shown = Filter.entries.filter { filterOn(it) }
+                    val n = shown.size
                     val step = if (event.isShiftPressed) n - 1 else 1
-                    setFilter(Filter.entries[(filter.ordinal + step) % n])
+                    setFilter(shown[(shown.indexOf(filter).coerceAtLeast(0) + step) % n])
                 }
                 return true
             }

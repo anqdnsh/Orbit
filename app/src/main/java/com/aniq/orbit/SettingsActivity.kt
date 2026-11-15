@@ -2,6 +2,7 @@ package com.aniq.orbit
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
@@ -16,12 +17,13 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
+import android.widget.Switch
 import android.widget.TextView
 import com.aniq.orbit.ui.Palette
 import com.aniq.orbit.ui.dp
 import com.aniq.orbit.ui.dpi
 
-/** Theme, hotkey set-up and the keyboard map. Built in code to keep the app free of extra libraries. */
+/** Hotkey, feature switches, appearance, permissions, shortcuts and about. Built in code to keep the app free of extra libraries. */
 class SettingsActivity : Activity() {
 
     private lateinit var pal: Palette
@@ -67,140 +69,166 @@ class SettingsActivity : Activity() {
 
         col.addView(text("OrbitSearch", 32f, pal.text, bold = true))
         col.addView(text("Fast search for your Galaxy Tab. Press the hotkey anywhere, type, press Enter.", 15f, pal.sub).also {
-            (it.layoutParams as? LinearLayout.LayoutParams)?.bottomMargin = dpi(20f)
+            (it.layoutParams as? LinearLayout.LayoutParams)?.bottomMargin = dpi(8f)
         })
+        val ctx = this
 
-        // Hotkey
+        // ---------- 1. Hotkey ----------
+        col.addView(section("Hotkey"))
         col.addView(card {
-            addView(text("Keyboard hotkey", 18f, pal.text, bold = true))
-            status = text("", 14f, pal.sub)
+            status = text("", 15f, pal.sub, bold = true)
             addView(status)
             addView(text(
-                "To open OrbitSearch from any app, switch on “${getString(R.string.a11y_label)}” in Accessibility. " +
-                    "It only watches for the hotkey and never reads your screen.\n\n" +
-                    "If the switch is greyed out (Android blocks this for sideloaded apps): " +
-                    "Settings › Apps › OrbitSearch › ⋮ menu › Allow restricted settings, then try again.",
+                "Switch on “${getString(R.string.a11y_label)}” in Accessibility to open OrbitSearch from any app.",
                 14f, pal.sub
             ))
             addView(button("Open Accessibility settings") {
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             })
-            addView(button("Open OrbitSearch app info") {
+            addView(text(
+                "Switch greyed out? Android blocks this for sideloaded apps: open app info, tap ⋮, " +
+                    "Allow restricted settings, then try again.",
+                12f, pal.sub
+            ).also { pad(it, top = 10f) })
+            addView(linkButton("Open OrbitSearch app info") {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             })
-            addView(text("Shortcut", 15f, pal.text, bold = true).also { pad(it, top = 16f) })
+            addView(divider())
+            addView(text("Shortcut", 15f, pal.text, bold = true))
             addView(radios(
                 Hotkey.entries.map { it.label },
-                Hotkey.entries.indexOf(Prefs.hotkey(this@SettingsActivity))
-            ) { i -> Prefs.setHotkey(this@SettingsActivity, Hotkey.entries[i]) })
-        })
-
-        // Theme
-        col.addView(card {
-            addView(text("Appearance", 18f, pal.text, bold = true))
-            val ids = listOf(Prefs.THEME_SYSTEM, Prefs.THEME_LIGHT, Prefs.THEME_DARK)
-            addView(radios(
-                listOf("Match system", "Light", "Dark"),
-                ids.indexOf(Prefs.theme(this@SettingsActivity)).coerceAtLeast(0)
-            ) { i ->
-                Prefs.setTheme(this@SettingsActivity, ids[i])
-                recreate()
-            })
-            addView(text("Reduce effects", 15f, pal.text, bold = true).also { pad(it, top = 12f) })
-            addView(radios(
-                listOf("Frosted glass (blur behind the panel)", "Solid panel, no blur (saves battery and GPU)"),
-                if (Palette.reduced(this@SettingsActivity)) 1 else 0,
-            ) { i -> Prefs.of(this@SettingsActivity).edit().putBoolean("reduce_effects", i == 1).apply() })
-            addView(button("Show welcome guide") {
-                startActivity(Intent(this@SettingsActivity, GuideActivity::class.java))
-            })
-        })
-
-        // Performance
-        col.addView(card {
-            addView(text("Performance", 18f, pal.text, bold = true))
-            perf = text("", 14f, pal.sub)
-            addView(perf)
-            addView(text(
-                "OrbitSearch keeps a panel ready and reuses it, does no background work, and gives memory back when " +
-                    "Android asks. Numbers update as you use it.",
-                12f, pal.sub
-            ))
-        })
-
-        // System controls
-        col.addView(card {
-            addView(text("System controls", 18f, pal.text, bold = true))
-            addView(text(
-                "Type commands like “restart”, “lock”, “screenshot”, “torch”, “volume 40”, “brightness 70”, " +
-                    "“dnd” or “wifi”. Each result says what Enter will do: Runs now, Opens Settings, " +
-                    "or Asks permission once.\n\n" +
-                    "Restart and Shut down open Samsung's power menu. Android only lets the system power off " +
-                    "or restart the tablet, so you tap the final button.\n\n" +
-                    "Optional permissions for running these straight away:",
-                14f, pal.sub
-            ))
-            addView(button("Allow brightness and auto-rotate") {
-                startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")))
-            })
-            addView(button("Allow Do Not Disturb control") {
-                startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
-            })
-        })
-
-        // Other ways to open
-        col.addView(card {
-            addView(text("Other ways to open", 18f, pal.text, bold = true))
+                Hotkey.entries.indexOf(Prefs.hotkey(ctx))
+            ) { i -> Prefs.setHotkey(ctx, Hotkey.entries[i]); recreate() })
+            addView(divider())
+            addView(text("Other ways to open", 15f, pal.text, bold = true))
             addView(text(
                 "• Tap the OrbitSearch icon in the taskbar or app drawer.\n" +
-                    "• Add the OrbitSearch tile to Quick Settings (edit the quick panel).\n" +
-                    "• Android 16 and later can give any app its own keyboard shortcut in the " +
-                    "physical keyboard settings, if your One UI version shows that option. " +
-                    "Point it at OrbitSearch and it opens without the accessibility switch.",
+                    "• Add the OrbitSearch tile to Quick Settings.\n" +
+                    "• On Android 16+, give OrbitSearch its own shortcut in physical keyboard settings, if One UI shows it.",
                 14f, pal.sub
             ))
-            addView(button("Open physical keyboard settings") {
+            addView(linkButton("Open physical keyboard settings") {
                 val i = Intent(Settings.ACTION_HARD_KEYBOARD_SETTINGS)
                 startActivity(if (i.resolveActivity(packageManager) != null) i else Intent(Settings.ACTION_SETTINGS))
             })
         })
 
-        // Keyboard map
+        // ---------- 2. Features ----------
+        col.addView(section("Features"))
+        col.addView(text("Switch off anything you don't use. It disappears from results and does no work.", 13f, pal.sub).also {
+            pad(it, top = 0f); (it.layoutParams as LinearLayout.LayoutParams).bottomMargin = dpi(10f)
+        })
+        for (g in Feature.Group.entries) col.addView(card {
+            addView(text(g.title, 15f, pal.text, bold = true))
+            Feature.entries.filter { it.group == g }.forEachIndexed { i, f ->
+                if (i > 0) addView(divider(thin = true))
+                addView(toggleRow(f.label, f.detail, f.on(ctx)) { v ->
+                    f.set(ctx, v)
+                    if (f == Feature.AREA || f == Feature.TIMERS || f == Feature.FILES) shortcutsDirty = true
+                })
+            }
+        })
+
+        // ---------- 3. Appearance ----------
+        col.addView(section("Appearance"))
         col.addView(card {
-            addView(text("Keyboard map", 18f, pal.text, bold = true))
-            val keys = listOf(
-                Prefs.hotkey(this@SettingsActivity).label to "Open / close OrbitSearch",
-                "Enter" to "Open the highlighted result (the first one, unless you move)",
-                "↑  ↓" to "Move through results",
-                "Ctrl + Enter" to "Open as a pop-up window",
-                "Shift + Enter" to "Open side by side",
-                "Ctrl + 1–8" to "Open that result directly",
-                "Ctrl + Tab" to "Switch filter: All, Apps, Files, System, Settings",
-                "Ctrl + /" to "Show all shortcuts inside OrbitSearch",
-                "Alt + Shift + S" to "Area screenshot from anywhere (saved and copied)",
-                "↓ then Space  /  Shift + Space" to "Preview the highlighted file",
-                "Space (on the timer)" to "Pause / resume the focus timer",
-                "Ctrl + C" to "Copy a calculator or currency answer",
-                "Ctrl + Backspace" to "Clear the search",
-                "Ctrl + ," to "OrbitSearch settings",
-                "Esc" to "Clear the search, press again to close",
-            )
-            for ((k, v) in keys) addView(LinearLayout(this@SettingsActivity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dpi(8f), 0, dpi(8f))
-                addView(text(v, 14f, pal.text), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                addView(text(k, 13f, pal.text, bold = true).apply {
-                    setPadding(dpi(10f), dpi(4f), dpi(10f), dpi(4f))
-                    background = GradientDrawable().apply {
-                        cornerRadius = dp(8f)
-                        setColor(pal.pageBg)
-                        setStroke(dpi(1f), pal.divider)
-                    }
-                }, LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
-                ))
+            addView(text("Theme", 15f, pal.text, bold = true))
+            val ids = listOf(Prefs.THEME_SYSTEM, Prefs.THEME_LIGHT, Prefs.THEME_DARK)
+            addView(radios(
+                listOf("Match system", "Light", "Dark"),
+                ids.indexOf(Prefs.theme(ctx)).coerceAtLeast(0)
+            ) { i ->
+                Prefs.setTheme(ctx, ids[i])
+                recreate()
             })
+            addView(divider())
+            addView(toggleRow(
+                "Frosted glass",
+                "Blur behind the panel. Off gives a solid panel and saves battery and GPU",
+                !Palette.reduced(ctx),
+            ) { v -> Prefs.of(ctx).edit().putBoolean("reduce_effects", !v).apply() })
+        })
+
+        // ---------- 4. Permissions ----------
+        col.addView(section("Permissions"))
+        col.addView(card {
+            addView(text("All optional. Each is only used for the feature next to it.", 13f, pal.sub))
+            permFiles = permRow("All files access", "File search and preview") {
+                startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName")))
+            }
+            addView(permFiles)
+            addView(divider(thin = true))
+            permWrite = permRow("Modify system settings", "“brightness 70” and auto-rotate run straight away") {
+                startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")))
+            }
+            addView(permWrite)
+            addView(divider(thin = true))
+            permDnd = permRow("Do Not Disturb access", "“dnd”, and focus timers that silence alerts") {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+            }
+            addView(permDnd)
+            addView(text(
+                "Restart and Shut down open Samsung's power menu, since only the system can power off the tablet.",
+                12f, pal.sub
+            ).also { pad(it, top = 12f) })
+        })
+
+        // ---------- 5. Keyboard shortcuts ----------
+        col.addView(section("Keyboard shortcuts"))
+        shortcutsCard = card { }
+        col.addView(shortcutsCard)
+        fillShortcuts()
+
+        // ---------- 6. About ----------
+        col.addView(section("About"))
+        col.addView(card {
+            val ver = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (_: Exception) { null }
+            addView(text("OrbitSearch ${ver ?: ""}".trim(), 15f, pal.text, bold = true))
+            perf = text("", 13f, pal.sub)
+            addView(perf)
+            addView(text(
+                "Keeps a panel ready and reuses it, does no background work, and gives memory back when Android asks.",
+                12f, pal.sub
+            ))
+            addView(linkButton("Show welcome guide") {
+                startActivity(Intent(ctx, GuideActivity::class.java))
+            })
+        })
+    }
+
+    private var shortcutsDirty = false
+    private lateinit var shortcutsCard: LinearLayout
+    private lateinit var permFiles: LinearLayout
+    private lateinit var permWrite: LinearLayout
+    private lateinit var permDnd: LinearLayout
+
+    private fun fillShortcuts() {
+        shortcutsCard.removeAllViews()
+        val keys = buildList {
+            add(Prefs.hotkey(this@SettingsActivity).label to "Open / close OrbitSearch")
+            add("Enter" to "Open the highlighted result (the first one, unless you move)")
+            add("↑  ↓" to "Move through results")
+            add("Ctrl + Enter" to "Open as a pop-up window")
+            add("Shift + Enter" to "Open side by side")
+            add("Ctrl + 1–8" to "Open that result directly")
+            add("Ctrl + Tab" to "Switch filter")
+            add("Ctrl + /" to "Show all shortcuts inside OrbitSearch")
+            if (Feature.AREA.on(this@SettingsActivity)) add("Alt + Shift + S" to "Area screenshot from anywhere (saved and copied)")
+            if (Feature.FILES.on(this@SettingsActivity)) add("↓ then Space" to "Preview the highlighted file")
+            if (Feature.TIMERS.on(this@SettingsActivity)) add("Space (on the timer)" to "Pause / resume the timer")
+            add("Ctrl + C" to "Copy a calculator or currency answer")
+            add("Ctrl + Backspace" to "Clear the search")
+            add("Ctrl + ," to "OrbitSearch settings")
+            add("Esc" to "Clear the search, press again to close")
+        }
+        for ((k, v) in keys) shortcutsCard.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dpi(7f), 0, dpi(7f))
+            addView(text(v, 14f, pal.text), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(keycap(k), LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ))
         })
     }
 
@@ -208,8 +236,12 @@ class SettingsActivity : Activity() {
         super.onResume()
         val on = Prefs.isHotkeyServiceOn(this)
         status.text = if (on) "● On: ${Prefs.hotkey(this).label} opens OrbitSearch from any app"
-        else "○ Off: switch on the OrbitSearch hotkey in Accessibility"
-        status.setTextColor(if (on) pal.accent else pal.sub)
+        else "○ Off: the hotkey isn't switched on yet"
+        status.setTextColor(if (on) pal.accent else pal.text)
+        val nm = getSystemService(android.app.NotificationManager::class.java)
+        setPerm(permFiles, android.os.Environment.isExternalStorageManager())
+        setPerm(permWrite, Settings.System.canWrite(this))
+        setPerm(permDnd, nm.isNotificationPolicyAccessGranted)
         val rt = Runtime.getRuntime()
         val heapMb = (rt.totalMemory() - rt.freeMemory()) / 1_048_576.0
         val pssMb = android.os.Debug.getPss() / 1024.0
@@ -220,6 +252,108 @@ class SettingsActivity : Activity() {
             append("Memory: %.0f MB total, %.1f MB app data\n".format(pssMb, heapMb))
             append("Apps indexed: ${com.aniq.orbit.search.AppIndex.apps.size}")
         }
+    }
+
+    // ---------- rows ----------
+
+    private fun section(title: String) = text(title.uppercase(), 12f, pal.sub, bold = true).apply {
+        letterSpacing = 0.1f
+        (layoutParams as LinearLayout.LayoutParams).apply { topMargin = dpi(18f); bottomMargin = dpi(8f); marginStart = dpi(6f) }
+    }
+
+    private fun divider(thin: Boolean = false) = View(this).apply {
+        setBackgroundColor(pal.divider)
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpi(1f)).apply {
+            val m = if (thin) 4f else 14f
+            topMargin = dpi(m); bottomMargin = dpi(m)
+        }
+    }
+
+    /** Title + detail on the left, a switch on the right; the whole row toggles. */
+    private fun toggleRow(title: String, detail: String, checked: Boolean, onChange: (Boolean) -> Unit) =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dpi(56f)
+            setPadding(0, dpi(6f), 0, dpi(6f))
+            val texts = LinearLayout(this@SettingsActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(text(title, 15f, pal.text).apply { (layoutParams as LinearLayout.LayoutParams).bottomMargin = dpi(2f) })
+                addView(text(detail, 13f, pal.sub).apply { (layoutParams as LinearLayout.LayoutParams).bottomMargin = 0 })
+            }
+            addView(texts, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dpi(12f) })
+            val sw = Switch(this@SettingsActivity).apply {
+                isChecked = checked
+                contentDescription = title
+                val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+                thumbTintList = ColorStateList(states, intArrayOf(pal.onAccent, if (pal.dark) 0xFFBDBDC2.toInt() else 0xFFFFFFFF.toInt()))
+                trackTintList = ColorStateList(states, intArrayOf(pal.accent, if (pal.dark) 0xFF3A3A3F.toInt() else 0xFFC9C9CF.toInt()))
+                setOnCheckedChangeListener { _, v ->
+                    onChange(v)
+                    if (shortcutsDirty) { shortcutsDirty = false; fillShortcuts() }
+                }
+            }
+            addView(sw)
+            isClickable = true
+            setOnClickListener { sw.toggle() }
+        }
+
+    /** A permission with its live state: "Allowed" or an Allow button. */
+    private fun permRow(title: String, detail: String, onAllow: () -> Unit) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        minimumHeight = dpi(56f)
+        val texts = LinearLayout(this@SettingsActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(text(title, 15f, pal.text).apply { (layoutParams as LinearLayout.LayoutParams).bottomMargin = dpi(2f) })
+            addView(text(detail, 13f, pal.sub).apply { (layoutParams as LinearLayout.LayoutParams).bottomMargin = 0 })
+        }
+        addView(texts, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dpi(12f) })
+        addView(text("", 13f, pal.sub, bold = true).apply {
+            tag = "state"
+            (layoutParams as LinearLayout.LayoutParams).bottomMargin = 0
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        })
+        addView(button("Allow") { onAllow() }.apply {
+            tag = "allow"
+            (layoutParams as LinearLayout.LayoutParams).topMargin = 0
+        })
+    }
+
+    private fun setPerm(row: LinearLayout, granted: Boolean) {
+        val state = row.findViewWithTag<TextView>("state")
+        val allow = row.findViewWithTag<View>("allow")
+        state.text = if (granted) "✓ Allowed" else ""
+        state.setTextColor(pal.accent)
+        state.visibility = if (granted) View.VISIBLE else View.GONE
+        allow.visibility = if (granted) View.GONE else View.VISIBLE
+    }
+
+    private fun keycap(k: String) = text(k, 13f, pal.text, bold = true).apply {
+        setPadding(dpi(10f), dpi(4f), dpi(10f), dpi(4f))
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        background = GradientDrawable().apply {
+            cornerRadius = dp(8f)
+            setColor(pal.pageBg)
+            setStroke(dpi(1f), pal.divider)
+        }
+    }
+
+    /** Quieter secondary button: accent text, no fill. */
+    private fun linkButton(label: String, onClick: () -> Unit) = Button(this).apply {
+        text = label
+        isAllCaps = false
+        setTextColor(pal.accent)
+        minHeight = dpi(44f)
+        minimumHeight = dpi(44f)
+        setPadding(0, 0, 0, 0)
+        background = null
+        stateListAnimator = null
+        gravity = Gravity.START or Gravity.CENTER_VERTICAL
+        setOnClickListener { onClick() }
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        )
     }
 
     // ---------- small builders ----------
@@ -267,26 +401,6 @@ class SettingsActivity : Activity() {
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dpi(10f) }
-    }
-
-    private fun field(hintText: String, password: Boolean = false) = android.widget.EditText(this).apply {
-        hint = hintText
-        setHintTextColor(pal.sub)
-        setTextColor(pal.text)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
-        isSingleLine = true
-        inputType = if (password)
-            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        else android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-        minHeight = dpi(48f)
-        setPadding(dpi(14f), 0, dpi(14f), 0)
-        background = GradientDrawable().apply {
-            cornerRadius = dp(12f)
-            setColor(pal.pageBg)
-        }
-        layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = dpi(6f) }
     }
 
     private fun radios(labels: List<String>, checked: Int, onPick: (Int) -> Unit) = RadioGroup(this).apply {
