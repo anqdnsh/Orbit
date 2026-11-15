@@ -25,7 +25,7 @@ import kotlin.math.roundToInt
  *  - runs straight away once you have granted a one-time permission,
  *  - opens the right Settings page or pop-up panel when Android doesn't let apps do it.
  */
-enum class How { GLOBAL, MEDIA, VOLUME, VOLUME_SET, TORCH, BRIGHTNESS, ROTATION, DND, SETTINGS, HEALTH, DEVICE_CARE, DEX,
+enum class How { GLOBAL, MEDIA, VOLUME, VOLUME_SET, TORCH, BRIGHTNESS, ROTATION, DND, SETTINGS, HEALTH, DEVICE_CARE,
     AREA, FOCUS, TIMER, TIMER_SHOW, TIMER_END, AWAKE, AWAKE_OFF }
 
 class CommandEntry(
@@ -100,8 +100,6 @@ object Commands {
         CommandEntry("awake0", "Keep awake until I turn it off", listOf("keep awake", "caffeinate", "awake", "always on"), How.AWAKE, arg = 0, glyph = Glyph.SUN),
         CommandEntry("awake_off", "Keep awake off", listOf("keep awake off", "caffeinate off", "let sleep", "awake off"), How.AWAKE_OFF, glyph = Glyph.SUN),
 
-        // DeX: no app can switch it directly, so open Quick Settings with the DeX tile ready.
-        CommandEntry("dex", "DeX", listOf("dex", "desktop mode", "samsung dex", "enter dex", "exit dex"), How.DEX, glyph = Glyph.ORBIT),
         g("split", "Split screen", listOf("split", "side by side", "multi window"), AccessibilityService.GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN),
         g("home", "Go home", listOf("home", "desktop"), AccessibilityService.GLOBAL_ACTION_HOME),
 
@@ -163,7 +161,6 @@ object Commands {
 
     fun title(ctx: Context, e: CommandEntry, param: Int?): String = when {
         e.how == How.HEALTH -> Health.read(ctx).title
-        e.how == How.DEX -> when (Dex.isOn(ctx)) { true -> "Exit DeX"; false -> "Enter DeX"; null -> "Enter / exit DeX" }
         e.how == How.TIMER_SHOW && FocusTimer.state != FocusTimer.State.IDLE ->
             "Show timer (${FocusTimer.label}, ${(FocusTimer.remaining() + 59_999) / 60_000} min left)"
         e.how == How.FOCUS && param != null -> "Focus for ${span(param)}"
@@ -190,14 +187,12 @@ object Commands {
             How.SETTINGS -> if (e.settings.firstOrNull()?.contains(".panel.") == true) "Opens Settings panel" else "Opens Settings"
             How.HEALTH -> Health.read(ctx).subtitle + "  ·  ↵ Device care"
             How.DEVICE_CARE -> if (e.arg == 1) "Opens Device care › Memory, then tap Clean now" else "Opens Device care"
-            How.DEX -> if (OrbitAccessibilityService.instance != null) "System · Switches straight away"
-            else "Needs the OrbitSearch hotkey switch (opens setup)"
             How.AREA, How.FOCUS, How.TIMER, How.TIMER_SHOW, How.AWAKE ->
                 if (OrbitAccessibilityService.instance == null) "Needs the OrbitSearch hotkey switch (opens setup)"
                 else when (e.how) {
                     How.AREA -> "Drag a box  ·  saved and copied  ·  Alt + Shift + S anywhere"
-                    How.FOCUS -> "Ring timer  ·  chimes when done"
-                    How.TIMER -> "Ring timer  ·  chimes when done"
+                    How.FOCUS -> "Countdown  ·  chimes when done"
+                    How.TIMER -> "Countdown  ·  chimes when done"
                     How.TIMER_SHOW -> if (FocusTimer.state == FocusTimer.State.IDLE) "No timer running" else "Opens the timer"
                     else -> if (KeepAwake.isOn) "Now: ${KeepAwake.label()}" else "Screen stays on, then sleeps normally"
                 }
@@ -232,17 +227,6 @@ object Commands {
         How.TIMER_END -> { FocusTimer.end(ctx); true }
         How.AWAKE_OFF -> { KeepAwake.stop(); toast(ctx, "Keep awake off"); true }
         How.DEVICE_CARE -> if (e.arg == 1) DeviceCare.openMemory(ctx) else DeviceCare.openDashboard(ctx)
-        How.DEX -> {
-            val svc = OrbitAccessibilityService.instance
-            if (svc == null) {
-                toast(ctx, "Turn on the OrbitSearch hotkey switch to use this")
-                ctx.startActivity(Intent(ctx, SettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            } else {
-                // Let the panel close first so Quick Settings opens over a clean screen.
-                main.postDelayed({ com.aniq.orbit.tools.DexSwitch.toggle(svc) }, 120)
-            }
-            true
-        }
         How.GLOBAL -> {
             val svc = OrbitAccessibilityService.instance
             if (svc == null) {

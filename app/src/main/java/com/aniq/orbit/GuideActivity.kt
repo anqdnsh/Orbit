@@ -231,7 +231,7 @@ class GuideActivity : Activity() {
         val grid = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for ((t, d) in listOf(
             "Apps, files & settings" to "Fuzzy search that learns what you use. Space previews files.",
-            "System & tools" to "Restart, lock, area screenshot, focus timer, keep awake, DeX.",
+            "System & tools" to "Restart, lock, area screenshot, focus timer, keep awake.",
             "Maths & currency" to "Type sums like 128*1.06 or 100 usd to myr for instant answers.",
         )) grid.addView(infoCard(t, d), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
             marginEnd = dpi(10f)

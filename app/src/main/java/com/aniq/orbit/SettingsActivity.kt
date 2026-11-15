@@ -129,6 +129,22 @@ class SettingsActivity : Activity() {
             }
         })
 
+        col.addView(card {
+            addView(text("Focus timer", 15f, pal.text, bold = true))
+            addView(text("Change the timer's face on the timer itself: swipe it, tap the dots, or press ← →.", 13f, pal.sub))
+            addView(toggleRow("Chime even on silent", "Plays the end chime like an alarm, even when the tablet is on silent", Prefs.timerChimeOnSilent(ctx)) {
+                Prefs.setTimerChimeOnSilent(ctx, it)
+            })
+            addView(divider(thin = true))
+            addView(toggleRow("Tick in the last 10 seconds", "A light tick you can feel, and barely hear", Prefs.timerTicks(ctx)) {
+                Prefs.setTimerTicks(ctx, it)
+            })
+            addView(divider(thin = true))
+            addView(toggleRow("Buzz every 10 minutes", "A gentle vibration so you feel time passing, no sound", Prefs.timerMilestones(ctx)) {
+                Prefs.setTimerMilestones(ctx, it)
+            })
+        })
+
         // ---------- 3. Appearance ----------
         col.addView(section("Appearance"))
         col.addView(card {

@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.ContextThemeWrapper
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -17,7 +18,10 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.aniq.orbit.Prefs
+import com.aniq.orbit.TimerFaceKind
 import com.aniq.orbit.tools.FocusTimer
+import kotlin.math.abs
 
 /**
  * The focus timer's floating UI, in the bottom-right corner of the screen:
@@ -25,6 +29,8 @@ import com.aniq.orbit.tools.FocusTimer
  *  - which grows in place into a compact card (ring, mm:ss, Pause / +5 min / Stop).
  * Esc, the chevron or tapping outside shrinks the card back into the bubble; tapping the bubble
  * opens the card. Nothing dims or blurs the screen. Only GPU-cheap properties are animated.
+ * The face (Classic, Black hole, Orbit) is picked on the card itself: swipe the face, tap the
+ * dots under it, or press ← →. The bubble uses the same face.
  */
 class TimerOverlay(private val ctx: Context) {
     private val wm = ctx.getSystemService(WindowManager::class.java)
@@ -32,7 +38,12 @@ class TimerOverlay(private val ctx: Context) {
     private var bubble: BubbleView? = null
     private val onChange: () -> Unit = { refresh() }
 
-    init { FocusTimer.addListener(onChange) }
+    init {
+        FocusTimer.addListener(onChange)
+        // A timer left running before Android closed OrbitSearch: bring its bubble back.
+        FocusTimer.restore(ctx)
+        if (FocusTimer.state == FocusTimer.State.RUNNING || FocusTimer.state == FocusTimer.State.PAUSED) showBubble()
+    }
 
     private fun themed(): Context = ContextThemeWrapper(ctx, android.R.style.Theme_DeviceDefault_DayNight)
 
@@ -141,6 +152,8 @@ class TimerOverlay(private val ctx: Context) {
         private val dot = View(c)
         private val status = TextView(c)
         private val face = TimerFace(c, pal, TimerFace.Style.DIAL)
+        private val dots = FaceDots(c, pal, face.face) { pick(it) }
+        private val restoreHint = Runnable { update() }
         private val primary = button(c, pal, filled = true)
         private val plus = button(c, pal, filled = false)
         private val stop = IconButton(c, pal, IconButton.Kind.STOP, boxed = true)
@@ -180,7 +193,12 @@ class TimerOverlay(private val ctx: Context) {
 
             // Body: ring on the left, controls on the right.
             val body = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            body.addView(face)
+            val faceCol = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL }
+            faceCol.addView(face)
+            faceCol.addView(dots, LinearLayout.LayoutParams(c.dpi(120f), c.dpi(40f)))
+            face.contentDescription = "Timer face. Swipe left or right to change"
+            face.setOnTouchListener(swipe)
+            body.addView(faceCol)
             val col = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
             col.addView(primary, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, c.dpi(44f)))
             val row = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL }
@@ -208,6 +226,33 @@ class TimerOverlay(private val ctx: Context) {
             update()
         }
 
+        /** Horizontal swipe on the face steps through the looks. */
+        private val swipe = object : View.OnTouchListener {
+            private var x0 = 0f
+            private var y0 = 0f
+            override fun onTouch(v: View, e: MotionEvent): Boolean {
+                when (e.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> { x0 = e.x; y0 = e.y }
+                    MotionEvent.ACTION_UP -> {
+                        val dx = e.x - x0
+                        if (abs(dx) > v.context.dp(24f) && abs(dx) > abs(e.y - y0)) pick(face.face.next(if (dx < 0) 1 else -1))
+                    }
+                }
+                return true
+            }
+        }
+
+        private fun pick(f: TimerFaceKind) {
+            if (f == face.face) return
+            Prefs.setTimerFace(context, f)
+            face.setFace(f)
+            dots.select(f)
+            performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+            hint.text = f.label
+            removeCallbacks(restoreHint)
+            postDelayed(restoreHint, 1400)
+        }
+
         private fun onPrimary() = when (FocusTimer.state) {
             FocusTimer.State.DONE -> FocusTimer.again(context)
             else -> FocusTimer.toggle(context)
@@ -231,7 +276,7 @@ class TimerOverlay(private val ctx: Context) {
             }
             plus.text = "+  5 min"
             stop.contentDescription = if (st == FocusTimer.State.DONE) "Close timer" else "Stop timer"
-            hint.text = if (st == FocusTimer.State.DONE) "Enter again · Esc closes" else "Space pauses · Esc minimises"
+            hint.text = if (st == FocusTimer.State.DONE) "Enter again · Esc closes" else "Space pauses · ← → face"
             face.poke()
         }
 
@@ -259,6 +304,8 @@ class TimerOverlay(private val ctx: Context) {
                     FocusTimer.addMinutes(context, 5); return true
                 }
                 KeyEvent.KEYCODE_DEL -> if (e.isCtrlPressed) { FocusTimer.end(context); return true }
+                KeyEvent.KEYCODE_DPAD_LEFT -> { pick(face.face.next(-1)); return true }
+                KeyEvent.KEYCODE_DPAD_RIGHT -> { pick(face.face.next(1)); return true }
             }
             return super.dispatchKeyEvent(e)
         }
@@ -283,7 +330,7 @@ class TimerOverlay(private val ctx: Context) {
                 elevation = c.dp(10f)
                 addView(face, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER))
                 isClickable = true
-                setOnClickListener { onTap() }
+                setOnClickListener { performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP); onTap() }
                 contentDescription = "Focus timer. Tap to open"
                 // Mouse / trackpad: grow a touch on hover.
                 setOnHoverListener { v, e ->
@@ -333,7 +380,10 @@ class TimerOverlay(private val ctx: Context) {
 /** Buttons dip slightly while pressed. */
 private val pressScale = View.OnTouchListener { v, e ->
     when (e.actionMasked) {
-        MotionEvent.ACTION_DOWN -> v.animate().scaleX(0.96f).scaleY(0.96f).setDuration(90).start()
+        MotionEvent.ACTION_DOWN -> {
+            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            v.animate().scaleX(0.96f).scaleY(0.96f).setDuration(90).start()
+        }
         MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> v.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
     }
     false
@@ -376,5 +426,66 @@ private class IconButton(c: Context, private val pal: Palette, private val kind:
             canvas.drawRoundRect(6f * s, 6f * s, 18f * s, 18f * s, r, r, paint)
         }
         canvas.restore()
+    }
+}
+
+/** Three dots under the face; the current one is a short red pill. Tap a dot to pick that face. */
+private class FaceDots(
+    c: Context, private val pal: Palette, initial: TimerFaceKind, private val onPick: (TimerFaceKind) -> Unit,
+) : View(c) {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var current = initial
+    private var from = initial
+    private var changedAt = 0L
+
+    init {
+        isClickable = true
+        isFocusable = false
+        contentDescription = "Timer face: " + initial.label
+    }
+
+    fun select(f: TimerFaceKind) {
+        if (f == current) return
+        from = current
+        current = f
+        changedAt = android.os.SystemClock.uptimeMillis()
+        contentDescription = "Timer face: " + f.label
+        invalidate()
+    }
+
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        if (e.actionMasked == MotionEvent.ACTION_UP) {
+            val n = TimerFaceKind.entries.size
+            val i = (e.x / width * n).toInt().coerceIn(0, n - 1)
+            onPick(TimerFaceKind.entries[i])
+        }
+        return true
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val n = TimerFaceKind.entries.size
+        val t = ((android.os.SystemClock.uptimeMillis() - changedAt) / 220f).coerceIn(0f, 1f)
+        val e = Motion.springOut.getInterpolation(t)
+        val dot = context.dp(6f)
+        val pill = context.dp(16f)
+        val cy = height / 2f
+        for (i in 0 until n) {
+            val cx = width * (i + 0.5f) / n
+            val k = TimerFaceKind.entries[i]
+            val w = when (k) {
+                current -> dot + (pill - dot) * e
+                from -> pill - (pill - dot) * e
+                else -> dot
+            }
+            val on = if (k == current) e else if (k == from) 1f - e else 0f
+            paint.color = blend(if (pal.dark) 0x40FFFFFF else 0x400B1220, pal.accent, on)
+            canvas.drawRoundRect(cx - w / 2, cy - dot / 2, cx + w / 2, cy + dot / 2, dot / 2, dot / 2, paint)
+        }
+        if (t < 1f) postInvalidateOnAnimation()
+    }
+
+    private fun blend(a: Int, b: Int, t: Float): Int {
+        fun ch(sh: Int) = (((a ushr sh) and 0xFF) + (((b ushr sh) and 0xFF) - ((a ushr sh) and 0xFF)) * t).toInt() shl sh
+        return ch(24) or ch(16) or ch(8) or ch(0)
     }
 }

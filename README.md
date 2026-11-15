@@ -17,7 +17,7 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 
 - **Area screenshot:** press **Alt + Shift + S** anywhere (or type "snip"). The screen freezes, you drag a box, and the crop is saved to Pictures/Screenshots/OrbitSearch and copied. Enter takes the whole screen. Apps that block screenshots (e.g. banking) come out black.
 - **File search (Spotlight-style):** type a file name, or use the **Files** filter. Press **↓ then Space** (or **Shift + Space**) to preview images, videos, PDFs (first page) and text, and ↓ ↑ to flip through files. It needs Android's "All files access" and searches the system's own file index, so nothing scans in the background.
-- **Focus timer:** `focus 25`, `focus 50`, `timer 10`, `timer 1h`. A glass card with a smooth 120 Hz ring and rolling digits. Space pauses, + adds 5 min, and Esc (or tapping outside) shrinks it to a small ring bubble in the bottom-right corner; tap the bubble to open it again. It leaves Do Not Disturb alone. It chimes when done, even if the tablet was asleep.
+- **Focus timer:** `focus 25`, `focus 50`, `timer 10`, `timer 1h`. A glass card with three faces: **Classic** (shrinking ring, rolling digits), **Black hole** (the glowing disk shrinks and spins faster as time runs out, then collapses) and **Orbit** (a planet circles once a minute and spirals in at zero). Change the face on the timer itself: swipe it, tap the dots under it, or press ← →. Space pauses, + adds 5 min, and Esc (or tapping outside) shrinks it to a small bubble in the bottom-right corner that uses the same face. It ends with OrbitSearch's own three-note chime and a tap–tap–thud vibration, ticks lightly in the last 10 seconds and gives a gentle buzz every 10 minutes (each can be switched off in settings). The chime plays even on silent unless you turn that off. It leaves Do Not Disturb alone, and still chimes if the tablet was asleep or Android closed OrbitSearch.
 - **Keep awake:** `awake 30`, `awake 1h`, "keep awake until I turn it off", "keep awake off". It uses an invisible keep-screen-on window, with no wake locks.
 - **Currency:** `100 usd to myr`, `rm50 in sgd`, `250 eur`. Rates come from Frankfurter (central-bank reference rates, no key), with ExchangeRate-API as a backup. They're fetched only when you convert, then cached for 12 hours.
 - **Ctrl + /** shows every shortcut inside OrbitSearch.
@@ -36,7 +36,6 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 - **Clean RAM / Optimise now:** open Samsung's Battery and device care (Memory › Clean now stops background apps). Since Android 14, apps can't close other apps themselves.
 - **Free up storage:** Android's free-up-space screen.
 - **Quit all apps** ("close all", "clear recents"): opens Recent apps, then you tap Close all.
-- **DeX:** type `dex` and press Enter to switch in or out straight away. Android has no DeX switch for apps, so OrbitSearch opens Quick Settings, taps the DeX tile for you and closes the shade (the tile must be in Quick Settings). In DeX the panel is a little narrower.
 
 ## System controls
 

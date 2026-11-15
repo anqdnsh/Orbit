@@ -10,5 +10,6 @@ class OrbitApp : Application() {
         Usage.init(this)
         AppIndex.init(this)
         Thread { runCatching { Commands.init(this) } }.start()
+        Thread { runCatching { Prefs.purgeOldAi(this) } }.start()
     }
 }
