@@ -13,7 +13,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -35,14 +34,13 @@ import com.aniq.orbit.search.SearchEngine
 class OrbitView(
     context: Context,
     private val host: Host,
-    drawFill: Boolean,
     opaque: Boolean,
 ) : FrameLayout(context) {
 
     interface Host { fun dismiss() }
 
     private val pal = Palette.current(context)
-    private val panel = GlassPanel(context, pal, drawFill, opaque)
+    private val panel = GlassPanel(context, pal, opaque)
     private val input = EditText(context)
     private val chips = ArrayList<TextView>()
     private val rows = ArrayList<RowView>()
@@ -127,7 +125,6 @@ class OrbitView(
             background = GradientDrawable().apply {
                 cornerRadius = context.dp(8f)
                 setColor(pal.chip)
-                setStroke(context.dpi(1f), pal.divider)
             }
         }
         row.addView(badge)
@@ -181,9 +178,9 @@ class OrbitView(
         })
     }
 
+    /** Borderless: sections are separated by space, not lines. */
     private fun divider(): View = View(context).apply {
-        setBackgroundColor(pal.divider)
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, context.dpi(1f))
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, context.dpi(4f))
     }
 
     private fun styleChips() {
@@ -285,12 +282,7 @@ class OrbitView(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         AppIndex.addListener(onIndexChanged)
-        panel.alpha = 0f
-        panel.scaleX = 0.97f
-        panel.scaleY = 0.97f
-        panel.translationY = -context.dp(8f)
-        panel.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0f)
-            .setDuration(140).setInterpolator(DecelerateInterpolator()).start()
+        animateIn()
         input.requestFocus()
         // Only pop the on-screen keyboard when no physical keyboard is attached.
         val cfg = resources.configuration
@@ -300,6 +292,55 @@ class OrbitView(
             context.getSystemService(InputMethodManager::class.java)
                 .showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
         }
+    }
+
+    // ---------- motion ----------
+    // Only alpha, scale and translation are animated: these run on the GPU's render
+    // properties, so every frame is cheap and can hit 120 Hz. The window also asks the
+    // display for its highest refresh rate (see Motion.kt).
+
+    private var closing = false
+
+    private fun animateIn() {
+        val rise = context.dp(14f)
+        panel.alpha = 0f
+        panel.scaleX = 0.94f
+        panel.scaleY = 0.94f
+        panel.translationY = -rise
+        panel.pivotY = 0f
+        panel.animate()
+            .alpha(1f).scaleX(1f).scaleY(1f).translationY(0f)
+            .setDuration(Motion.ENTER_MS)
+            .setInterpolator(Motion.springOut)
+            .withLayer()
+            .start()
+        // Results settle in just after the panel, one after another.
+        for (i in rows.indices) {
+            val r = rows[i]
+            if (r.visibility != VISIBLE) continue
+            r.alpha = 0f
+            r.translationY = context.dp(6f)
+            r.animate().alpha(1f).translationY(0f)
+                .setStartDelay(60L + i * 14L)
+                .setDuration(180)
+                .setInterpolator(Motion.easeOut)
+                .start()
+        }
+    }
+
+    /** Fades and lifts the panel away, then calls [done] (which removes the window). */
+    fun animateOut(done: () -> Unit) {
+        if (closing) return
+        closing = true
+        panel.animate().cancel()
+        panel.animate()
+            .alpha(0f).scaleX(0.97f).scaleY(0.97f).translationY(-context.dp(8f))
+            .setStartDelay(0)
+            .setDuration(Motion.EXIT_MS)
+            .setInterpolator(Motion.easeIn)
+            .withLayer()
+            .withEndAction(done)
+            .start()
     }
 
     override fun onDetachedFromWindow() {

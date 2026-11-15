@@ -27,7 +27,7 @@ class Palette(
     companion object {
         val LIGHT = Palette(
             dark = false,
-            fill = 0xA6FFFFFF.toInt(),
+            fill = 0x99FFFFFF.toInt(),
             fillOpaque = 0xF5F7F9FD.toInt(),
             strokeTop = 0xF2FFFFFF.toInt(),
             strokeBottom = 0x40FFFFFF,

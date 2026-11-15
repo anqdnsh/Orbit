@@ -4,13 +4,16 @@ import android.accessibilityservice.AccessibilityService
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.hardware.display.DisplayManager
 import android.os.Handler
 import android.os.Looper
 import android.view.ContextThemeWrapper
+import android.view.Display
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import com.aniq.orbit.ui.Motion
 import com.aniq.orbit.ui.OrbitView
 import com.aniq.orbit.ui.dpi
 
@@ -75,7 +78,7 @@ class OrbitAccessibilityService : AccessibilityService(), OrbitView.Host {
         val width = minOf(dpi(720f), (dm.widthPixels * 0.92f).toInt())
 
         val themed = ContextThemeWrapper(this, android.R.style.Theme_DeviceDefault_DayNight)
-        val view = OrbitView(themed, this, drawFill = true, opaque = !blur)
+        val view = OrbitView(themed, this, opaque = !blur)
         var flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
             WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
             WindowManager.LayoutParams.FLAG_DIM_BEHIND
@@ -92,10 +95,14 @@ class OrbitAccessibilityService : AccessibilityService(), OrbitView.Host {
             y = (dm.heightPixels * 0.11f).toInt()
             // Dark mode dims more so wallpaper colour doesn't tint the charcoal glass.
             dimAmount = if (com.aniq.orbit.ui.Palette.isDark(this@OrbitAccessibilityService)) 0.30f else if (blur) 0.12f else 0.28f
-            if (blur) blurBehindRadius = dpi(26f)
+            if (blur) blurBehindRadius = dpi(48f) // heavier blur = more frosted
             softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
             title = "ORBIT"
+            windowAnimations = 0 // ORBIT animates itself (Motion.kt)
         }
+        Motion.preferFastest(
+            lp, getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY)
+        )
         try {
             wm.addView(view, lp)
             overlay = view
@@ -106,22 +113,27 @@ class OrbitAccessibilityService : AccessibilityService(), OrbitView.Host {
         }
     }
 
-    override fun dismiss() {
+    override fun dismiss() = close(animated = true)
+
+    private fun close(animated: Boolean) {
         val v = overlay ?: return
         overlay = null
-        try { getSystemService(WindowManager::class.java).removeViewImmediate(v) } catch (_: Exception) {}
+        val remove = {
+            try { getSystemService(WindowManager::class.java).removeViewImmediate(v) } catch (_: Exception) {}
+        }
+        if (animated && v.isAttachedToWindow) v.animateOut { remove() } else remove()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        dismiss() // rotation, dark-mode switch or entering DeX: reopen fresh next time
+        close(animated = false) // rotation, dark-mode switch or entering DeX: reopen fresh next time
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
     override fun onInterrupt() {}
 
     override fun onDestroy() {
-        dismiss()
+        close(animated = false)
         Prefs.of(this).unregisterOnSharedPreferenceChangeListener(prefListener)
         instance = null
         super.onDestroy()

@@ -1,8 +1,9 @@
 package com.aniq.orbit.ui
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
 import android.graphics.Canvas
-import android.graphics.LinearGradient
 import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.RectF
@@ -10,26 +11,26 @@ import android.graphics.Shader
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.widget.LinearLayout
+import kotlin.random.Random
 
 /**
- * The liquid-glass slab: translucent tint (the system blur sits behind it) plus a thin
- * edge that is bright at the top and fades out, which reads as light catching curved glass.
+ * Frosted, borderless glass: the whole screen behind is blurred by the system, this panel
+ * lays a soft tint over it plus a very fine grain (like real frosted glass). No outline,
+ * no edge stroke, no divider lines.
  */
 class GlassPanel(
     context: Context,
     private val pal: Palette,
-    /** False when the window background already carries the tint (activity host). */
-    private val drawFill: Boolean,
     private val opaque: Boolean,
 ) : LinearLayout(context) {
 
-    private val radius = context.dp(28f)
+    private val radius = context.dp(30f)
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = if (opaque) pal.fillOpaque else pal.fill
     }
-    private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = context.dp(1.2f)
+    private val grain = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        shader = BitmapShader(noise, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
+        alpha = if (pal.dark) 10 else 14
     }
     private val rect = RectF()
 
@@ -44,17 +45,23 @@ class GlassPanel(
         }
     }
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        edge.shader = LinearGradient(
-            0f, 0f, 0f, h * 0.6f, pal.strokeTop, pal.strokeBottom, Shader.TileMode.CLAMP
-        )
+    override fun onDraw(canvas: Canvas) {
+        rect.set(0f, 0f, width.toFloat(), height.toFloat())
+        canvas.drawRoundRect(rect, radius, radius, fill)
+        if (!opaque) canvas.drawRoundRect(rect, radius, radius, grain)
     }
 
-    override fun onDraw(canvas: Canvas) {
-        val inset = edge.strokeWidth / 2f
-        rect.set(inset, inset, width - inset, height - inset)
-        if (drawFill) canvas.drawRoundRect(rect, radius, radius, fill)
-        canvas.drawRoundRect(rect, radius - inset, radius - inset, edge)
+    companion object {
+        /** 96×96 grey noise tile, made once and shared. Tiny, and tiling hides the repeat. */
+        private val noise: Bitmap by lazy {
+            val n = 96
+            val px = IntArray(n * n)
+            val r = Random(7)
+            for (i in px.indices) {
+                val v = r.nextInt(256)
+                px[i] = (0xFF shl 24) or (v shl 16) or (v shl 8) or v
+            }
+            Bitmap.createBitmap(px, n, n, Bitmap.Config.ARGB_8888)
+        }
     }
 }
