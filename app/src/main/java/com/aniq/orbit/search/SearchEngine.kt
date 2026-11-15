@@ -3,7 +3,6 @@ package com.aniq.orbit.search
 import android.content.Context
 import com.aniq.orbit.CommandEntry
 import com.aniq.orbit.Commands
-import com.aniq.orbit.ai.AiSettings
 
 object SearchEngine {
     const val MAX = 8
@@ -18,8 +17,8 @@ object SearchEngine {
 
     /**
      * Ranked results. Index 0 is always the best match, so Enter opens it.
-     * Order: AI ("ask …") / calculator / currency / typed command → apps, system, settings
-     * and files by score → Ask AI → web search. [onAsync] runs when slower parts (files,
+     * Order: calculator / currency / typed command → apps, system, settings
+     * and files by score → web search. [onAsync] runs when slower parts (files,
      * currency rates) arrive, so the caller can refresh.
      */
     fun search(ctx: Context, raw: String, filter: Filter, onAsync: () -> Unit = {}): List<Item> {
@@ -36,9 +35,6 @@ object SearchEngine {
         if (raw.isBlank()) return suggestions(ctx, filter)
 
         val out = ArrayList<Item>(MAX)
-        // "ask …" goes straight to Quick AI.
-        val askPrefix = Regex("^ask\\s+(.+)", RegexOption.IGNORE_CASE).find(trimmed)
-        if (filter == Filter.ALL && askPrefix != null) out += ask(ctx, askPrefix.groupValues[1])
         if (filter == Filter.ALL) {
             Calc.evaluate(raw)?.let { out += Item.Calc(trimmed, it) }
             Currency.parse(raw)?.let { out += money(ctx, it, onAsync) }
@@ -78,12 +74,11 @@ object SearchEngine {
 
         scored.sortByDescending { it.second }
         val fileRows = if (filter == Filter.ALL) files(ctx, trimmed, onAsync, 3) else emptyList()
-        val tail = if (filter == Filter.ALL) (if (askPrefix == null) 2 else 1) else 0
+        val tail = if (filter == Filter.ALL) 1 else 0
         val room = MAX - out.size - tail - fileRows.size
         scored.take(room.coerceAtLeast(0)).forEach { out += it.first() }
         out += fileRows
         if (filter == Filter.ALL) {
-            if (askPrefix == null) out += ask(ctx, trimmed)
             out += Item.Web(trimmed)
         }
         return out.take(MAX)
@@ -115,12 +110,6 @@ object SearchEngine {
             "$amt ${m.from} → ${m.to}  ·  1 ${m.from} = ${"%.4f".format(rate)} ${m.to}  ·  ${rates.date}  ·  ${rates.source}",
         )
     }
-
-    fun ask(ctx: Context, q: String) = Item.Ask(
-        q,
-        if (AiSettings.ready(ctx)) "Tab  ·  answers here with ${AiSettings.provider(ctx).label}"
-        else "Tab  ·  set up AI first in OrbitSearch settings (Ctrl + ,)"
-    )
 
     private fun command(ctx: Context, e: CommandEntry, v: Int?) =
         Item.Command(e, v, Commands.title(ctx, e, v), Commands.status(ctx, e))

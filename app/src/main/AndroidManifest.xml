@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Quick AI: only used to reach the AI provider you choose. -->
+    <!-- Currency conversion: fetches daily exchange rates. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- File search (optional, you grant "All files access"): searches file names in Android's own index. -->

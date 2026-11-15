@@ -1,18 +1,12 @@
 package com.aniq.orbit.ui
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.Editable
 import android.text.InputType
-import android.text.Spannable
-import android.text.SpannableStringBuilder
 import android.text.TextWatcher
-import android.text.style.ForegroundColorSpan
-import android.text.style.StyleSpan
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
@@ -27,9 +21,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.aniq.orbit.Launcher
 import com.aniq.orbit.Prefs
-import com.aniq.orbit.ai.AiChat
-import com.aniq.orbit.ai.AiSettings
-import com.aniq.orbit.ai.ChatMessage
 import com.aniq.orbit.search.AppIndex
 import com.aniq.orbit.search.CalcHistory
 import com.aniq.orbit.search.FilePreview
@@ -43,7 +34,7 @@ import com.aniq.orbit.search.SearchEngine
  * instant) or in SearchActivity. Keyboard first: Enter always opens the highlighted result,
  * which is the first result unless you move with the arrow keys.
  *
- * Modes: SEARCH (results), AI (Quick AI answer), CHEAT (Ctrl + / shortcuts), PREVIEW (Space on a file).
+ * Modes: SEARCH (results), CHEAT (Ctrl + / shortcuts), PREVIEW (Space on a file).
  */
 class OrbitView(
     context: Context,
@@ -53,7 +44,7 @@ class OrbitView(
 
     interface Host { fun dismiss() }
 
-    private enum class Mode { SEARCH, AI, CHEAT, PREVIEW }
+    private enum class Mode { SEARCH, CHEAT, PREVIEW }
 
     val pal = Palette.current(context)
     private val panel = GlassPanel(context, pal, opaque)
@@ -81,12 +72,6 @@ class OrbitView(
     private val calcRecent = LinearLayout(context)
     private val keypad = LinearLayout(context)
 
-    // Quick AI
-    private val answerBox = LinearLayout(context)
-    private val answerHeader = TextView(context)
-    private val answerText = TextView(context)
-    private val answerScroll = MaxHeightScroll(context, 0.5f)
-
     // Cheat sheet
     private val cheatBox = LinearLayout(context)
 
@@ -104,7 +89,6 @@ class OrbitView(
         chipsView = chipRow()
         panel.addView(chipsView)
         panel.addView(buildCalcCard())
-        panel.addView(buildAnswerBox())
         panel.addView(buildCheatSheet())
         panel.addView(buildPreview())
 
@@ -145,7 +129,7 @@ class OrbitView(
         })
         // On-screen keyboard "Go" key behaves like Enter.
         input.setOnEditorActionListener { _, _, _ ->
-            if (mode == Mode.AI) followUp() else open(selected, Launcher.Mode.NORMAL)
+            open(selected, Launcher.Mode.NORMAL)
             true
         }
         refresh()
@@ -153,7 +137,6 @@ class OrbitView(
 
     /** Back to a clean search, for reusing this panel next time it opens. */
     fun reset() {
-        if (mode == Mode.AI) AiChat.clear()
         filter = Filter.ALL
         styleChips()
         navigating = false
@@ -312,27 +295,6 @@ class OrbitView(
         }
     }
 
-    private fun buildAnswerBox(): View = answerBox.apply {
-        orientation = LinearLayout.VERTICAL
-        visibility = GONE
-        setPadding(context.dpi(22f), context.dpi(2f), context.dpi(22f), context.dpi(8f))
-        addView(LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(ImageView(context).apply { setImageDrawable(StrokeIcon(Glyph.SPARK, pal.accent)) },
-                LinearLayout.LayoutParams(context.dpi(16f), context.dpi(16f)).apply { marginEnd = context.dpi(8f) })
-            addView(answerHeader.apply { setTextColor(pal.sub); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f) })
-        })
-        answerText.apply {
-            setTextColor(pal.text)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-            setLineSpacing(0f, 1.25f)
-            setPadding(0, context.dpi(10f), 0, context.dpi(6f))
-        }
-        answerScroll.addView(answerText)
-        addView(answerScroll)
-    }
-
     private fun buildCheatSheet(): View {
         cheatBox.apply {
             orientation = LinearLayout.VERTICAL
@@ -353,8 +315,6 @@ class OrbitView(
                 "Open side by side" to "Shift ↵", "Open result 1–8" to "Ctrl 1–8"),
             "MOVE" to listOf("Next / previous result" to "↓ ↑", "Switch filter" to "Ctrl Tab",
                 "Clear search, then close" to "Esc", "OrbitSearch settings" to "Ctrl ,"),
-            "QUICK AI" to listOf("Ask AI about what you typed" to "Tab", "Follow-up question" to "↵ / Tab",
-                "Copy answer" to "Ctrl C", "New question" to "Ctrl N"),
             "TOOLS" to listOf("Area screenshot (anywhere)" to "Alt ⇧ S", "Preview a file" to "↓ then Space",
                 "Focus timer" to "focus 25", "Keep screen awake" to "awake 1h"),
             "TYPE TO…" to listOf("Calculate" to "128*1.06", "Convert currency" to "100 usd to myr",
@@ -435,19 +395,17 @@ class OrbitView(
         val search = m == Mode.SEARCH
         chipsView.visibility = if (search) VISIBLE else GONE
         listView.visibility = if (search) VISIBLE else GONE
-        answerBox.visibility = if (m == Mode.AI) VISIBLE else GONE
         cheatBox.visibility = if (m == Mode.CHEAT) VISIBLE else GONE
         previewBox.visibility = if (m == Mode.PREVIEW) VISIBLE else GONE
         if (!search) calcBox.visibility = GONE
         footerHint.text = when (m) {
             Mode.SEARCH -> SEARCH_HINT
-            Mode.AI -> QUICK_HINT
             Mode.CHEAT -> "Ctrl /  or  Esc  back to search"
             Mode.PREVIEW -> "↵ Open    ↓ ↑ Next file    Space / Esc Close preview"
         }
-        input.hint = if (m == Mode.AI) "Ask a follow-up…" else SEARCH_PLACEHOLDER
+        input.hint = SEARCH_PLACEHOLDER
         // Quick cross-fade into the new view.
-        val shown = when (m) { Mode.AI -> answerBox; Mode.CHEAT -> cheatBox; Mode.PREVIEW -> previewBox; else -> listView }
+        val shown = when (m) { Mode.CHEAT -> cheatBox; Mode.PREVIEW -> previewBox; else -> listView }
         shown.alpha = 0f
         shown.animate().alpha(1f).setDuration(140).setInterpolator(Motion.easeOut).start()
     }
@@ -537,7 +495,6 @@ class OrbitView(
 
     private fun open(i: Int, mode: Launcher.Mode) {
         val item = results.getOrNull(i) ?: return
-        if (item is Item.Ask) { startQuickAi(item.query); return }
         if (item is Item.Money && item.value == null) return
         if (Launcher.open(context, item, mode)) host.dismiss()
     }
@@ -580,93 +537,10 @@ class OrbitView(
         showPreview()
     }
 
-    // ---------- Quick AI ----------
-
-    private fun startQuickAi(raw: String) {
-        val q = raw.trim().let { Regex("^ask\\s+", RegexOption.IGNORE_CASE).replace(it, "") }
-        if (q.isEmpty()) return
-        AiChat.clear()
-        setMode(Mode.AI)
-        input.setText("")
-        val p = AiSettings.provider(context)
-        answerHeader.text = "Quick AI  ·  ${p.label}  ·  ${AiSettings.model(context, p).ifBlank { "no model set" }}"
-        ask(q)
-    }
-
-    private fun ask(q: String) {
-        if (!AiSettings.ready(context)) {
-            AiChat.messages += ChatMessage(true, q)
-            AiChat.messages += ChatMessage(false,
-                "⚠ AI isn't set up yet. Press Ctrl + , to open OrbitSearch settings, choose a provider and paste your API key.")
-            renderAnswer()
-            return
-        }
-        AiChat.send(context, q, onUpdate = { renderAnswer() }, onDone = { renderAnswer() })
-    }
-
-    private fun followUp() {
-        val q = input.text?.toString()?.trim().orEmpty()
-        if (q.isEmpty() || AiChat.busy) return
-        input.setText("")
-        ask(q)
-    }
-
-    private fun exitQuickAi() {
-        AiChat.clear()
-        setMode(Mode.SEARCH)
-        input.setText("")
-        refresh()
-    }
-
-    private fun renderAnswer() {
-        val sb = SpannableStringBuilder()
-        AiChat.messages.forEachIndexed { i, m ->
-            if (i > 0) sb.append(if (m.fromUser) "\n\n" else "\n")
-            val start = sb.length
-            if (m.fromUser) {
-                sb.append(m.text)
-                sb.setSpan(ForegroundColorSpan(pal.sub), start, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                sb.setSpan(StyleSpan(Typeface.BOLD), start, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            } else {
-                sb.append(if (m.text.isEmpty() && AiChat.busy) "Thinking…" else plain(m.text))
-            }
-        }
-        answerText.text = sb
-        answerScroll.post { answerScroll.scrollTo(0, answerText.height) }
-    }
-
-    /** Light markdown clean-up so answers read well as plain text. */
-    private fun plain(md: String): String = md.lines().joinToString("\n") { line ->
-        var l = line
-        l = l.replace(Regex("^#{1,6}\\s+"), "")
-        l = l.replace(Regex("^(\\s*)[-*]\\s+"), "$1• ")
-        l.replace("**", "").replace("__", "").replace("`", "")
-    }
-
-    private fun copyAnswer() {
-        val last = AiChat.messages.lastOrNull { !it.fromUser }?.text ?: return
-        context.getSystemService(ClipboardManager::class.java)
-            .setPrimaryClip(ClipData.newPlainText("OrbitSearch AI", plain(last)))
-    }
-
     // ---------- keys ----------
 
     private fun openSettings() {
         if (Launcher.open(context, Item.OrbitSettings, Launcher.Mode.NORMAL)) host.dismiss()
-    }
-
-    private fun aiKey(e: KeyEvent): Boolean {
-        val ctrl = e.isCtrlPressed
-        when (e.keyCode) {
-            KeyEvent.KEYCODE_ESCAPE, KeyEvent.KEYCODE_BACK -> { exitQuickAi(); return true }
-            KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_TAB -> { followUp(); return true }
-            KeyEvent.KEYCODE_DPAD_DOWN -> { answerScroll.smoothScrollBy(0, context.dpi(80f)); return true }
-            KeyEvent.KEYCODE_DPAD_UP -> { answerScroll.smoothScrollBy(0, -context.dpi(80f)); return true }
-            KeyEvent.KEYCODE_C -> if (ctrl && input.selectionStart == input.selectionEnd) { copyAnswer(); return true }
-            KeyEvent.KEYCODE_N -> if (ctrl) { AiChat.clear(); renderAnswer(); input.hint = "Ask a new question…"; return true }
-            KeyEvent.KEYCODE_COMMA -> if (ctrl) { openSettings(); return true }
-        }
-        return false
     }
 
     private fun previewKey(e: KeyEvent): Boolean {
@@ -689,7 +563,6 @@ class OrbitView(
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action != KeyEvent.ACTION_DOWN) return super.dispatchKeyEvent(event)
         when (mode) {
-            Mode.AI -> return aiKey(event) || super.dispatchKeyEvent(event)
             Mode.PREVIEW -> return previewKey(event) || super.dispatchKeyEvent(event)
             Mode.CHEAT -> return cheatKey(event) || super.dispatchKeyEvent(event)
             Mode.SEARCH -> {}
@@ -727,8 +600,6 @@ class OrbitView(
                     val n = Filter.entries.size
                     val step = if (event.isShiftPressed) n - 1 else 1
                     setFilter(Filter.entries[(filter.ordinal + step) % n])
-                } else {
-                    startQuickAi(input.text?.toString().orEmpty())
                 }
                 return true
             }
@@ -824,14 +695,12 @@ class OrbitView(
 
     override fun onDetachedFromWindow() {
         AppIndex.removeListener(onIndexChanged)
-        if (mode == Mode.AI) AiChat.clear()
         super.onDetachedFromWindow()
     }
 
     companion object {
         private const val SEARCH_PLACEHOLDER = "Search apps, files, settings, maths…"
-        private const val SEARCH_HINT = "↵ Open    Tab Ask AI    Ctrl / Shortcuts    Esc Close"
-        private const val QUICK_HINT = "↵ / Tab Follow-up    Ctrl C Copy    Ctrl N New    Esc Back"
+        private const val SEARCH_HINT = "↵ Open    Ctrl / Shortcuts    Esc Close"
     }
 }
 

@@ -41,7 +41,6 @@ object Launcher {
                     ) i.data = Uri.parse("package:" + ctx.packageName)
                     start(ctx, i, Mode.NORMAL)
                 }
-                is Item.Ask -> false // handled inside the panel (Quick AI)
                 is Item.Web -> openWeb(ctx, item.query, mode)
                 Item.OrbitSettings -> start(ctx, Intent(ctx, SettingsActivity::class.java), mode)
             }
