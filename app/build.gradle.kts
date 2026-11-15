@@ -17,8 +17,8 @@ android {
         applicationId = "com.aniq.orbit"
         minSdk = 33          // Android 13 — Galaxy Tab S9 series and newer
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 7
+        versionName = "0.7.0"
     }
 
     signingConfigs {
@@ -61,6 +61,12 @@ kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
     }
+}
+
+// Name the APK after the app and version, so every download is clearly a different file
+// (e.g. OrbitSearch-0.7.0-release.apk) and file managers don't show an old cached icon.
+base {
+    archivesName.set("OrbitSearch-" + android.defaultConfig.versionName)
 }
 
 // No dependencies on purpose: plain Android framework + Kotlin stdlib keeps the APK tiny and startup fast.
