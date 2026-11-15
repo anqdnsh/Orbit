@@ -197,7 +197,7 @@ class TimerOverlay(private val ctx: Context) {
             faceCol.addView(face)
             faceCol.addView(dots, LinearLayout.LayoutParams(c.dpi(120f), c.dpi(40f)))
             face.contentDescription = "Timer face. Swipe left or right to change"
-            face.setOnTouchListener(swipe)
+            face.setOnTouchListener { v, e -> swipe.onTouch(v, e) }
             body.addView(faceCol)
             val col = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
             col.addView(primary, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, c.dpi(44f)))
