@@ -74,7 +74,7 @@ class AreaCapture(private val svc: AccessibilityService) {
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             setFitInsetsTypes(0)
             windowAnimations = 0
-            title = "ORBIT area screenshot"
+            title = "OrbitSearch area screenshot"
         }
         try {
             wm.addView(v, lp)
@@ -102,18 +102,18 @@ class AreaCapture(private val svc: AccessibilityService) {
                 else {
                     svc.getSystemService(ClipboardManager::class.java)
                         .setPrimaryClip(ClipData.newUri(svc.contentResolver, "Screenshot", uri))
-                    toast("Saved to Pictures/Screenshots/ORBIT and copied")
+                    toast("Saved to Pictures/Screenshots/OrbitSearch and copied")
                 }
             }
         }
     }
 
     private fun write(b: Bitmap): Uri? {
-        val name = "ORBIT_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".png"
+        val name = "OrbitSearch_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".png"
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, name)
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Screenshots/ORBIT")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Screenshots/OrbitSearch")
             put(MediaStore.Images.Media.IS_PENDING, 1)
         }
         val cr = svc.contentResolver

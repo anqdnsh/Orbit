@@ -64,7 +64,7 @@
         <activity
             android:name=".GuideActivity"
             android:exported="false"
-            android:label="Welcome to ORBIT"
+            android:label="Welcome to OrbitSearch"
             android:excludeFromRecents="true"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize" />
 
@@ -78,7 +78,7 @@
             android:label="@string/settings_title"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize" />
 
-        <!-- Listens only for the ORBIT hotkey. Does not read screen content. -->
+        <!-- Listens only for the OrbitSearch hotkey. Does not read screen content. -->
         <service
             android:name=".OrbitAccessibilityService"
             android:exported="true"

@@ -68,7 +68,7 @@ class SettingsActivity : Activity() {
         }
         setContentView(wrap)
 
-        col.addView(text("ORBIT", 32f, pal.text, bold = true))
+        col.addView(text("OrbitSearch", 32f, pal.text, bold = true))
         col.addView(text("Fast search for your Galaxy Tab. Press the hotkey anywhere, type, press Enter.", 15f, pal.sub).also {
             (it.layoutParams as? LinearLayout.LayoutParams)?.bottomMargin = dpi(20f)
         })
@@ -79,16 +79,16 @@ class SettingsActivity : Activity() {
             status = text("", 14f, pal.sub)
             addView(status)
             addView(text(
-                "To open ORBIT from any app, switch on “${getString(R.string.a11y_label)}” in Accessibility. " +
+                "To open OrbitSearch from any app, switch on “${getString(R.string.a11y_label)}” in Accessibility. " +
                     "It only watches for the hotkey and never reads your screen.\n\n" +
                     "If the switch is greyed out (Android blocks this for sideloaded apps): " +
-                    "Settings › Apps › ORBIT › ⋮ menu › Allow restricted settings, then try again.",
+                    "Settings › Apps › OrbitSearch › ⋮ menu › Allow restricted settings, then try again.",
                 14f, pal.sub
             ))
             addView(button("Open Accessibility settings") {
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             })
-            addView(button("Open ORBIT app info") {
+            addView(button("Open OrbitSearch app info") {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             })
             addView(text("Shortcut", 15f, pal.text, bold = true).also { pad(it, top = 16f) })
@@ -125,7 +125,7 @@ class SettingsActivity : Activity() {
             perf = text("", 14f, pal.sub)
             addView(perf)
             addView(text(
-                "ORBIT keeps a panel ready and reuses it, does no background work, and gives memory back when " +
+                "OrbitSearch keeps a panel ready and reuses it, does no background work, and gives memory back when " +
                     "Android asks. Numbers update as you use it.",
                 12f, pal.sub
             ))
@@ -157,7 +157,7 @@ class SettingsActivity : Activity() {
             val current = AiSettings.provider(ctx)
             addView(text("Quick AI", 18f, pal.text, bold = true))
             addView(text(
-                "Type anything, press Tab, and the answer appears right in ORBIT. Use your own API key. " +
+                "Type anything, press Tab, and the answer appears right in OrbitSearch. Use your own API key. " +
                     "It's encrypted on this tablet and only sent to the provider you choose.",
                 14f, pal.sub
             ))
@@ -209,11 +209,11 @@ class SettingsActivity : Activity() {
         col.addView(card {
             addView(text("Other ways to open", 18f, pal.text, bold = true))
             addView(text(
-                "• Tap the ORBIT icon in the taskbar or app drawer.\n" +
-                    "• Add the ORBIT tile to Quick Settings (edit the quick panel).\n" +
+                "• Tap the OrbitSearch icon in the taskbar or app drawer.\n" +
+                    "• Add the OrbitSearch tile to Quick Settings (edit the quick panel).\n" +
                     "• Android 16 and later can give any app its own keyboard shortcut in the " +
                     "physical keyboard settings, if your One UI version shows that option. " +
-                    "Point it at ORBIT and it opens without the accessibility switch.",
+                    "Point it at OrbitSearch and it opens without the accessibility switch.",
                 14f, pal.sub
             ))
             addView(button("Open physical keyboard settings") {
@@ -226,7 +226,7 @@ class SettingsActivity : Activity() {
         col.addView(card {
             addView(text("Keyboard map", 18f, pal.text, bold = true))
             val keys = listOf(
-                Prefs.hotkey(this@SettingsActivity).label to "Open / close ORBIT",
+                Prefs.hotkey(this@SettingsActivity).label to "Open / close OrbitSearch",
                 "Enter" to "Open the highlighted result (the first one, unless you move)",
                 "↑  ↓" to "Move through results",
                 "Ctrl + Enter" to "Open as a pop-up window",
@@ -237,13 +237,13 @@ class SettingsActivity : Activity() {
                 "Ctrl + N (in Quick AI)" to "Start a new question",
                 "Esc (in Quick AI)" to "Back to search",
                 "Ctrl + Tab" to "Switch filter: All, Apps, Files, System, Settings",
-                "Ctrl + /" to "Show all shortcuts inside ORBIT",
+                "Ctrl + /" to "Show all shortcuts inside OrbitSearch",
                 "Alt + Shift + S" to "Area screenshot from anywhere (saved and copied)",
                 "↓ then Space  /  Shift + Space" to "Preview the highlighted file",
                 "Space (on the timer)" to "Pause / resume the focus timer",
                 "Ctrl + C" to "Copy a calculator, currency or AI answer",
                 "Ctrl + Backspace" to "Clear the search",
-                "Ctrl + ," to "ORBIT settings",
+                "Ctrl + ," to "OrbitSearch settings",
                 "Esc" to "Clear the search, press again to close",
             )
             for ((k, v) in keys) addView(LinearLayout(this@SettingsActivity).apply {
@@ -268,15 +268,15 @@ class SettingsActivity : Activity() {
     override fun onResume() {
         super.onResume()
         val on = Prefs.isHotkeyServiceOn(this)
-        status.text = if (on) "● On: ${Prefs.hotkey(this).label} opens ORBIT from any app"
-        else "○ Off: switch on the ORBIT hotkey in Accessibility"
+        status.text = if (on) "● On: ${Prefs.hotkey(this).label} opens OrbitSearch from any app"
+        else "○ Off: switch on the OrbitSearch hotkey in Accessibility"
         status.setTextColor(if (on) pal.accent else pal.sub)
         val rt = Runtime.getRuntime()
         val heapMb = (rt.totalMemory() - rt.freeMemory()) / 1_048_576.0
         val pssMb = android.os.Debug.getPss() / 1024.0
         perf.text = buildString {
             append(if (Stats.opens > 0) "Panel open time: last ${Stats.lastOpenMs} ms, average %.0f ms (${Stats.opens} opens)\n".format(Stats.avgOpenMs)
-                   else "Panel open time: open ORBIT with the hotkey to measure\n")
+                   else "Panel open time: open OrbitSearch with the hotkey to measure\n")
             append("Last search: %.2f ms\n".format(com.aniq.orbit.search.SearchEngine.lastSearchMicros / 1000.0))
             append("Memory: %.0f MB total, %.1f MB app data\n".format(pssMb, heapMb))
             append("Apps indexed: ${com.aniq.orbit.search.AppIndex.apps.size}")

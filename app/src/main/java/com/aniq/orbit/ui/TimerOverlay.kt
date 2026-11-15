@@ -51,7 +51,7 @@ class TimerOverlay(private val ctx: Context) {
             dimAmount = if (pal.dark) 0.28f else 0.14f
             if (blur) blurBehindRadius = ctx.dpi(30f)
             windowAnimations = 0
-            title = "ORBIT timer"
+            title = "OrbitSearch timer"
         }
         Motion.preferFastest(
             lp, ctx.getSystemService(android.hardware.display.DisplayManager::class.java)
@@ -92,7 +92,7 @@ class TimerOverlay(private val ctx: Context) {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             y = ctx.dpi(10f)
             windowAnimations = 0
-            title = "ORBIT timer pill"
+            title = "OrbitSearch timer pill"
         }
         try {
             wm.addView(v, lp)

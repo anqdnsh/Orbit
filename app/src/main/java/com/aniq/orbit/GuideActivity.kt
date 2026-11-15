@@ -185,7 +185,7 @@ class GuideActivity : Activity() {
     // ---------- rendering ----------
 
     private fun render(dir: Int) {
-        stepLabel.text = "ORBIT  ·  STEP ${step + 1} OF $STEPS"
+        stepLabel.text = "OrbitSearch  ·  Step ${step + 1} of $STEPS"
         dots.removeAllViews()
         for (i in 0 until STEPS) dots.addView(View(this).apply {
             background = GradientDrawable().apply {
@@ -235,7 +235,7 @@ class GuideActivity : Activity() {
             addView(ImageView(this@GuideActivity).apply { setImageDrawable(StrokeIcon(Glyph.ORBIT, pal.accent)) },
                 FrameLayout.LayoutParams(dpi(40f), dpi(40f), Gravity.CENTER))
         }, LinearLayout.LayoutParams(dpi(72f), dpi(72f)).apply { bottomMargin = dpi(18f) })
-        title("Welcome to ORBIT", 40f)
+        title("Welcome to OrbitSearch", 40f)
         para("Open any app, file, setting or command in a keystroke. Press the hotkey from anywhere, type a few letters, press Enter.")
         body.addView(keyRow(listOf("Alt", "+", "Space", "→", "type", "→", "↵")), spaced(22f))
         val grid = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -252,9 +252,9 @@ class GuideActivity : Activity() {
     private fun hotkey() {
         val on = Prefs.isHotkeyServiceOn(this)
         title("Turn on the hotkey")
-        para("ORBIT uses Android's accessibility switch only to notice its shortcuts (Alt + Space, Alt + Shift + S). It never reads your screen.")
+        para("OrbitSearch uses Android's accessibility switch only to notice its shortcuts (Alt + Space, Alt + Shift + S). It never reads your screen.")
         body.addView(statusRow(
-            on, if (on) "ORBIT keyboard hotkey is on" else "ORBIT keyboard hotkey is off",
+            on, if (on) "OrbitSearch keyboard hotkey is on" else "OrbitSearch keyboard hotkey is off",
             "Updates by itself when you come back",
             if (on) null else "Open Accessibility settings",
         ) { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, spaced(22f))
@@ -264,9 +264,9 @@ class GuideActivity : Activity() {
                 background = GradientDrawable().apply { cornerRadius = dp(18f); setColor(if (pal.dark) 0x08FFFFFF else 0x080B1220) }
                 setPadding(dpi(20f), dpi(16f), dpi(20f), dpi(16f))
                 addView(text(14f, pal.text, bold = true).apply { text = "Switch greyed out? Android blocks this for sideloaded apps:" })
-                for (l in listOf("1.  Settings › Apps › ORBIT", "2.  ⋮ menu (top right) › Allow restricted settings", "3.  Come back here and switch it on"))
+                for (l in listOf("1.  Settings › Apps › OrbitSearch", "2.  ⋮ menu (top right) › Allow restricted settings", "3.  Come back here and switch it on"))
                     addView(text(14f, pal.sub).apply { text = l; setPadding(0, dpi(6f), 0, 0) })
-                addView(smallButton("Open ORBIT app info") {
+                addView(smallButton("Open OrbitSearch app info") {
                     startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
                 }, spaced(10f))
             }
@@ -278,7 +278,7 @@ class GuideActivity : Activity() {
         val on = Prefs.isHotkeyServiceOn(this)
         title("Try it now")
         para(if (on) "Press the hotkey on your keyboard. This step ticks itself off." else
-            "Turn on the hotkey in the previous step first, or skip: you can always open ORBIT from its icon.")
+            "Turn on the hotkey in the previous step first, or skip: you can always open OrbitSearch from its icon.")
         val stage = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -294,7 +294,7 @@ class GuideActivity : Activity() {
         stage.addView(status)
         body.addView(stage, spaced(22f))
         if (on) onHotkey = {
-            status.text = "✓  It works. The ORBIT panel opened. Press Esc to close it."
+            status.text = "✓  It works. The OrbitSearch panel opened. Press Esc to close it."
             status.setTextColor(pal.accent)
             status.scaleX = 0.9f; status.scaleY = 0.9f
             status.animate().scaleX(1f).scaleY(1f).setDuration(260).setInterpolator(Motion.springOut).start()
@@ -305,7 +305,7 @@ class GuideActivity : Activity() {
 
     private fun look() {
         title("Pick a look")
-        para("Frosted glass in light or charcoal dark, with a red accent. You can change this any time in ORBIT settings.")
+        para("Frosted glass in light or charcoal dark, with a red accent. You can change this any time in OrbitSearch settings.")
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val current = Prefs.theme(this)
         for ((id, name) in listOf(Prefs.THEME_SYSTEM to "Match system", Prefs.THEME_LIGHT to "Light", Prefs.THEME_DARK to "Dark")) {
@@ -339,7 +339,7 @@ class GuideActivity : Activity() {
 
     private fun quickAi() {
         title("Quick AI (optional)")
-        para("Type anything in ORBIT and press Tab: the answer appears right in the panel. Use your own API key; it's encrypted on this tablet and only sent to the provider you pick.")
+        para("Type anything in OrbitSearch and press Tab: the answer appears right in the panel. Use your own API key; it's encrypted on this tablet and only sent to the provider you pick.")
         val chips = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for (p in listOf(AiProvider.CLAUDE, AiProvider.OPENAI, AiProvider.GEMINI, AiProvider.OPENROUTER)) {
             val on = p == aiChoice
@@ -365,7 +365,7 @@ class GuideActivity : Activity() {
         }
         body.addView(keyField, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpi(52f)).apply { topMargin = dpi(12f) })
         body.addView(text(13f, pal.sub).apply {
-            text = "Model: ${AiSettings.model(this@GuideActivity, aiChoice)}  ·  change it, or use OpenRouter / your own server, in ORBIT settings."
+            text = "Model: ${AiSettings.model(this@GuideActivity, aiChoice)}  ·  change it, or use OpenRouter / your own server, in OrbitSearch settings."
             setPadding(0, dpi(8f), 0, 0)
         })
     }

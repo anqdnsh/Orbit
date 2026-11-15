@@ -39,7 +39,7 @@ object KeepAwake {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            title = "ORBIT keep awake"
+            title = "OrbitSearch keep awake"
         }
         return try {
             w.addView(v, lp)

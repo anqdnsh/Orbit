@@ -122,12 +122,14 @@ class StrokeIcon(private val glyph: Glyph, color: Int) : Drawable() {
                 c.drawCircle(12f, 12f, 2.8f, p)
             }
             Glyph.ORBIT -> {
-                c.drawCircle(12f, 12f, 3f, p)
+                // OrbitSearch mark: a lens-planet with an orbit ring, as in the app icon.
                 c.save()
-                c.rotate(-20f, 12f, 12f)
-                r.set(2f, 7.5f, 22f, 16.5f)
+                c.rotate(-24f, 12f, 12f)
+                r.set(1.5f, 8.4f, 22.5f, 15.6f)
                 c.drawOval(r, p)
                 c.restore()
+                c.drawCircle(11.6f, 11.4f, 4.8f, p)
+                c.drawLine(15f, 15f, 19f, 19f, p)
             }
         }
         c.restore()

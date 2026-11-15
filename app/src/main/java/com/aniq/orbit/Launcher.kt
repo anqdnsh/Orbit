@@ -114,7 +114,7 @@ object Launcher {
 
     private fun copy(ctx: Context, text: String): Boolean {
         ctx.getSystemService(ClipboardManager::class.java)
-            .setPrimaryClip(ClipData.newPlainText("ORBIT", text))
+            .setPrimaryClip(ClipData.newPlainText("OrbitSearch", text))
         return true // Android 13+ shows its own "Copied" confirmation.
     }
 }

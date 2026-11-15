@@ -96,11 +96,11 @@ sealed class Item {
     }
 
     object OrbitSettings : Item() {
-        override val title = "ORBIT settings"
+        override val title = "OrbitSearch settings"
         override val subtitle = "Theme, hotkey, keyboard map"
         override val usageKey = "orbit:settings"
         override val glyph = Glyph.ORBIT
-        val norm = Text.normalize("orbit settings")
-        val keywords = listOf("orbit", "hotkey", "theme", "dark mode", "light mode", "preferences").map { Text.normalize(it) }
+        val norm = Text.normalize("orbitsearch settings")
+        val keywords = listOf("orbit", "orbitsearch", "orbit settings", "hotkey", "theme", "dark mode", "light mode", "preferences").map { Text.normalize(it) }
     }
 }

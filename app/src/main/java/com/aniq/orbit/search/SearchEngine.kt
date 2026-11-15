@@ -93,7 +93,7 @@ object SearchEngine {
         if (!FileSearch.allowed()) {
             return if (limit == MAX) listOf(Item.Permission(
                 "Allow file access to search files",
-                "Android's \"All files access\" lets ORBIT search names of your documents, PDFs and downloads",
+                "Android's \"All files access\" lets OrbitSearch search names of your documents, PDFs and downloads",
                 android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
             )) else emptyList()
         }
@@ -119,7 +119,7 @@ object SearchEngine {
     fun ask(ctx: Context, q: String) = Item.Ask(
         q,
         if (AiSettings.ready(ctx)) "Tab  ·  answers here with ${AiSettings.provider(ctx).label}"
-        else "Tab  ·  set up AI first in ORBIT settings (Ctrl + ,)"
+        else "Tab  ·  set up AI first in OrbitSearch settings (Ctrl + ,)"
     )
 
     private fun command(ctx: Context, e: CommandEntry, v: Int?) =

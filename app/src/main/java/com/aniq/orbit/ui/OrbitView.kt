@@ -226,7 +226,7 @@ class OrbitView(
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
         setPadding(context.dpi(22f), context.dpi(8f), context.dpi(22f), context.dpi(12f))
-        addView(label(12f, pal.sub, bold = true).apply { text = "ORBIT" })
+        addView(label(12f, pal.sub, bold = true).apply { text = "OrbitSearch" })
         addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
         addView(footerHint.apply {
             text = SEARCH_HINT
@@ -352,7 +352,7 @@ class OrbitView(
             "OPEN" to listOf("Open highlighted (first) result" to "↵", "Open as pop-up window" to "Ctrl ↵",
                 "Open side by side" to "Shift ↵", "Open result 1–8" to "Ctrl 1–8"),
             "MOVE" to listOf("Next / previous result" to "↓ ↑", "Switch filter" to "Ctrl Tab",
-                "Clear search, then close" to "Esc", "ORBIT settings" to "Ctrl ,"),
+                "Clear search, then close" to "Esc", "OrbitSearch settings" to "Ctrl ,"),
             "QUICK AI" to listOf("Ask AI about what you typed" to "Tab", "Follow-up question" to "↵ / Tab",
                 "Copy answer" to "Ctrl C", "New question" to "Ctrl N"),
             "TOOLS" to listOf("Area screenshot (anywhere)" to "Alt ⇧ S", "Preview a file" to "↓ then Space",
@@ -597,7 +597,7 @@ class OrbitView(
         if (!AiSettings.ready(context)) {
             AiChat.messages += ChatMessage(true, q)
             AiChat.messages += ChatMessage(false,
-                "⚠ AI isn't set up yet. Press Ctrl + , to open ORBIT settings, choose a provider and paste your API key.")
+                "⚠ AI isn't set up yet. Press Ctrl + , to open OrbitSearch settings, choose a provider and paste your API key.")
             renderAnswer()
             return
         }
@@ -646,7 +646,7 @@ class OrbitView(
     private fun copyAnswer() {
         val last = AiChat.messages.lastOrNull { !it.fromUser }?.text ?: return
         context.getSystemService(ClipboardManager::class.java)
-            .setPrimaryClip(ClipData.newPlainText("ORBIT AI", plain(last)))
+            .setPrimaryClip(ClipData.newPlainText("OrbitSearch AI", plain(last)))
     }
 
     // ---------- keys ----------

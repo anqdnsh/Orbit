@@ -1,4 +1,4 @@
-# ORBIT
+# OrbitSearch
 
 A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Android 13+), built for the Book Cover Keyboard. It's frosted glass in light or charcoal dark with a red accent, it has no libraries, and it opens instantly. A welcome guide walks you through setup on first launch.
 
@@ -9,25 +9,25 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 - **Enter opens the first result.** The top hit is always highlighted. The arrow keys move the highlight.
 - **More keys:** Ctrl + Enter opens a pop-up window, Shift + Enter opens side by side, Ctrl + 1–8 opens that result directly, Ctrl + Tab switches filters, Ctrl + C copies a calculator answer, Esc closes.
 - **It learns:** things you open often or recently rank higher. That data stays on the tablet.
-- **Light / Dark / Match system**, set in ORBIT settings (search "orbit" or press Ctrl + ,).
+- **Light / Dark / Match system**, set in OrbitSearch settings (search "orbit" or press Ctrl + ,).
 - **Liquid glass:** uses Android's real cross-window blur. When One UI turns blur off (for example in battery saver), it switches to a frosted tint.
 - **Other ways in:** the app icon, a Quick Settings tile, and Android's own per-app keyboard shortcut if your One UI version offers it.
 
 ## Laptop tools
 
-- **Area screenshot:** press **Alt + Shift + S** anywhere (or type "snip"). The screen freezes, you drag a box, and the crop is saved to Pictures/Screenshots/ORBIT and copied. Enter takes the whole screen. Apps that block screenshots (e.g. banking) come out black.
+- **Area screenshot:** press **Alt + Shift + S** anywhere (or type "snip"). The screen freezes, you drag a box, and the crop is saved to Pictures/Screenshots/OrbitSearch and copied. Enter takes the whole screen. Apps that block screenshots (e.g. banking) come out black.
 - **File search (Spotlight-style):** type a file name, or use the **Files** filter. Press **↓ then Space** (or **Shift + Space**) to preview images, videos, PDFs (first page) and text, and ↓ ↑ to flip through files. It needs Android's "All files access" and searches the system's own file index, so nothing scans in the background.
 - **Focus timer:** `focus 25`, `focus 50`, `timer 10`, `timer 1h`. A glass card with a smooth 120 Hz ring and rolling digits. Space pauses, + adds 5 min, and Esc shrinks it to a pill at the top. Focus sessions turn on Do Not Disturb (if allowed) and put it back afterwards. It chimes when done, even if the tablet was asleep.
 - **Keep awake:** `awake 30`, `awake 1h`, "keep awake until I turn it off", "keep awake off". It uses an invisible keep-screen-on window, with no wake locks.
 - **Calculator card:** typing maths shows a big answer, your recent results and a small keypad for touch.
 - **Currency:** `100 usd to myr`, `rm50 in sgd`, `250 eur`. Rates come from Frankfurter (central-bank reference rates, no key), with ExchangeRate-API as a backup. They're fetched only when you convert, then cached for 12 hours.
-- **Ctrl + /** shows every shortcut inside ORBIT.
+- **Ctrl + /** shows every shortcut inside OrbitSearch.
 
 ## Speed and resources
 
 - The hotkey service keeps a panel built and reuses it, so opening is just showing a ready window. It's prepared while the tablet is idle.
 - Search scores everything first and only builds the rows that will show. File search is debounced and runs off the main thread.
-- No background work: no polling, no timers, no wake locks. The 120 Hz request only applies while ORBIT is on screen.
+- No background work: no polling, no timers, no wake locks. The 120 Hz request only applies while OrbitSearch is on screen.
 - When Android asks for memory back, the spare panel and icon cache are dropped.
 - **Reduce effects** (settings) turns off the blur. **Performance** (settings) shows real open time, search time and memory.
 
@@ -35,7 +35,7 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 
 Type anything and press **Tab**. The answer streams into the panel. Enter or Tab asks a follow-up, Ctrl + C copies the answer, Ctrl + N starts a new question, and Esc goes back to search. Typing `ask …` and pressing Enter does the same thing.
 
-Set it up in ORBIT settings › Quick AI. You choose Claude, ChatGPT, Gemini, OpenRouter or a custom OpenAI-compatible server (for example Ollama on your PC), then paste your API key. The key is encrypted with the Android Keystore and only sent to that provider. Model names are editable because providers rename them often.
+Set it up in OrbitSearch settings › Quick AI. You choose Claude, ChatGPT, Gemini, OpenRouter or a custom OpenAI-compatible server (for example Ollama on your PC), then paste your API key. The key is encrypted with the Android Keystore and only sent to that provider. Model names are editable because providers rename them often.
 
 ## Device tools
 
@@ -64,23 +64,23 @@ No Android Studio needed:
 
 1. Push this folder to a GitHub repo.
 2. Go to **Actions › Build APK**. It runs on every push. Download `orbit-apk` from the run.
-3. (Optional) To make each new APK install over the old one, add a signing key as repo secrets: `ORBIT_KEYSTORE_B64`, `ORBIT_KEYSTORE_PASSWORD`, `ORBIT_KEY_ALIAS`, `ORBIT_KEY_PASSWORD`. Without them, each run uses a different debug key, so you have to uninstall before updating.
+3. (Optional) To make each new APK install over the old one, add a signing key as repo secrets: `OrbitSearch_KEYSTORE_B64`, `OrbitSearch_KEYSTORE_PASSWORD`, `OrbitSearch_KEY_ALIAS`, `OrbitSearch_KEY_PASSWORD`. Without them, each run uses a different debug key, so you have to uninstall before updating.
 
 Locally: `gradle assembleRelease` (Gradle 8.14+, JDK 17, Android SDK 36).
 
 ## Setup on the tablet
 
 1. Install the APK.
-2. Open ORBIT settings and tap **Open Accessibility settings**. Switch on **ORBIT keyboard hotkey**.
-3. If the switch is greyed out (Android blocks this for sideloaded apps): **Settings › Apps › ORBIT › ⋮ › Allow restricted settings**, then repeat step 2.
+2. Open OrbitSearch settings and tap **Open Accessibility settings**. Switch on **OrbitSearch keyboard hotkey**.
+3. If the switch is greyed out (Android blocks this for sideloaded apps): **Settings › Apps › OrbitSearch › ⋮ › Allow restricted settings**, then repeat step 2.
 
 The accessibility service only checks key presses for the hotkey (`canRetrieveWindowContent=false`). It never reads the screen.
 
 ## Known limits
 
 - Pop-up and side-by-side are requests. One UI decides whether the current mode honours them. In DeX they work as freeform windows. In normal tablet mode, side by side needs split screen to be possible for that app.
-- App shortcuts (like "New note") need ORBIT to be the default home app on Android, so they're left for later.
-- Android doesn't allow clipboard history in the background, so ORBIT won't offer it.
+- App shortcuts (like "New note") need OrbitSearch to be the default home app on Android, so they're left for later.
+- Android doesn't allow clipboard history in the background, so OrbitSearch won't offer it.
 
 ## Code map
 

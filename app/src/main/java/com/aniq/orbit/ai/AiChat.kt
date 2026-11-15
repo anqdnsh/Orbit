@@ -26,7 +26,7 @@ object AiChat {
     @Volatile private var conn: HttpURLConnection? = null
     @Volatile private var generation = 0
 
-    private const val SYSTEM = "You are the assistant inside ORBIT, a quick launcher on a Samsung Galaxy Tab. " +
+    private const val SYSTEM = "You are the assistant inside OrbitSearch, a quick launcher on a Samsung Galaxy Tab. " +
         "Answer clearly and briefly in plain text. Use short lists only when they help."
 
     fun clear() {
@@ -93,8 +93,8 @@ object AiChat {
         p: AiProvider, model: String, key: String?, customUrl: String,
         msgs: List<ChatMessage>, emit: (String) -> Unit,
     ) {
-        if (p != AiProvider.CUSTOM && key.isNullOrBlank()) throw IllegalStateException("Add your ${p.label} API key in ORBIT settings (Ctrl + ,).")
-        if (model.isBlank()) throw IllegalStateException("Set a model name in ORBIT settings.")
+        if (p != AiProvider.CUSTOM && key.isNullOrBlank()) throw IllegalStateException("Add your ${p.label} API key in OrbitSearch settings (Ctrl + ,).")
+        if (model.isBlank()) throw IllegalStateException("Set a model name in OrbitSearch settings.")
         when (p) {
             AiProvider.CLAUDE -> {
                 val body = JSONObject()
@@ -155,7 +155,7 @@ object AiChat {
             }
             AiProvider.OPENROUTER, AiProvider.CUSTOM -> {
                 val base = if (p == AiProvider.OPENROUTER) "https://openrouter.ai/api/v1" else customUrl
-                if (base.isBlank()) throw IllegalStateException("Add your server address in ORBIT settings.")
+                if (base.isBlank()) throw IllegalStateException("Add your server address in OrbitSearch settings.")
                 val body = JSONObject()
                     .put("model", model)
                     .put("stream", true)
@@ -165,7 +165,7 @@ object AiChat {
                     })
                 val headers = HashMap<String, String>()
                 if (!key.isNullOrBlank()) headers["Authorization"] = "Bearer $key"
-                if (p == AiProvider.OPENROUTER) headers["X-Title"] = "ORBIT"
+                if (p == AiProvider.OPENROUTER) headers["X-Title"] = "OrbitSearch"
                 post("$base/chat/completions", body, headers) { json ->
                     json.optJSONObject("error")?.let { throw IllegalStateException(it.optString("message", "Server error")) }
                     val c = json.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("delta") ?: return@post
@@ -194,8 +194,8 @@ object AiChat {
             val raw = try { c.errorStream?.bufferedReader()?.readText().orEmpty() } catch (_: Exception) { "" }
             val msg = try { errorText(JSONObject(raw)) } catch (_: Exception) { raw.take(200) }
             throw IllegalStateException(when (code) {
-                401, 403 -> "The API key was refused ($code). Check it in ORBIT settings."
-                404 -> "Model or address not found ($code). Check the model name in ORBIT settings. $msg"
+                401, 403 -> "The API key was refused ($code). Check it in OrbitSearch settings."
+                404 -> "Model or address not found ($code). Check the model name in OrbitSearch settings. $msg"
                 429 -> "Rate limit or out of credit ($code). $msg"
                 else -> "Error $code. $msg"
             }.trim())

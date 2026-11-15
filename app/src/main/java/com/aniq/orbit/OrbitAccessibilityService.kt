@@ -165,7 +165,7 @@ class OrbitAccessibilityService : AccessibilityService(), OrbitView.Host {
             dimAmount = if (view.pal.dark) 0.30f else if (blur) 0.12f else 0.28f
             if (blur) blurBehindRadius = dpi(48f) // heavier blur = more frosted
             softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
-            title = "ORBIT"
+            title = "OrbitSearch"
             windowAnimations = 0 // ORBIT animates itself (Motion.kt)
         }
         Motion.preferFastest(lp, getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY))

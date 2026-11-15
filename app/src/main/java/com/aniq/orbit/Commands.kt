@@ -176,10 +176,10 @@ object Commands {
 
     /** The tag shown under each command, so you know what Enter will do. */
     fun status(ctx: Context, e: CommandEntry): String {
-        e.note?.let { return if (OrbitAccessibilityService.instance != null) it else "Needs the ORBIT hotkey switch (opens setup)" }
+        e.note?.let { return if (OrbitAccessibilityService.instance != null) it else "Needs the OrbitSearch hotkey switch (opens setup)" }
         return when (e.how) {
             How.GLOBAL -> if (OrbitAccessibilityService.instance != null) "System · Runs now"
-            else "Needs the ORBIT hotkey switch (opens setup)"
+            else "Needs the OrbitSearch hotkey switch (opens setup)"
             How.MEDIA, How.VOLUME, How.VOLUME_SET -> "System · Runs now"
             How.TORCH -> if (torchId != null || !torchChecked) "System · Runs now" else "No torch on this device"
             How.BRIGHTNESS, How.ROTATION ->
@@ -191,9 +191,9 @@ object Commands {
             How.HEALTH -> Health.read(ctx).subtitle + "  ·  ↵ Device care"
             How.DEVICE_CARE -> if (e.arg == 1) "Opens Device care › Memory, then tap Clean now" else "Opens Device care"
             How.DEX -> if (OrbitAccessibilityService.instance != null) "Opens Quick Settings, then tap the DeX tile"
-            else "Needs the ORBIT hotkey switch (opens setup)"
+            else "Needs the OrbitSearch hotkey switch (opens setup)"
             How.AREA, How.FOCUS, How.TIMER, How.TIMER_SHOW, How.AWAKE ->
-                if (OrbitAccessibilityService.instance == null) "Needs the ORBIT hotkey switch (opens setup)"
+                if (OrbitAccessibilityService.instance == null) "Needs the OrbitSearch hotkey switch (opens setup)"
                 else when (e.how) {
                     How.AREA -> "Drag a box  ·  saved and copied  ·  Alt + Shift + S anywhere"
                     How.FOCUS -> if (ctx.getSystemService(NotificationManager::class.java).isNotificationPolicyAccessGranted)
@@ -213,7 +213,7 @@ object Commands {
         How.AREA, How.FOCUS, How.TIMER, How.TIMER_SHOW, How.AWAKE -> {
             val svc = OrbitAccessibilityService.instance
             if (svc == null) {
-                toast(ctx, "Turn on the ORBIT hotkey switch to use this")
+                toast(ctx, "Turn on the OrbitSearch hotkey switch to use this")
                 ctx.startActivity(Intent(ctx, SettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } else when (e.how) {
                 How.AREA -> svc.area.start()
@@ -237,7 +237,7 @@ object Commands {
         How.GLOBAL -> {
             val svc = OrbitAccessibilityService.instance
             if (svc == null) {
-                toast(ctx, "Turn on the ORBIT hotkey switch to use this")
+                toast(ctx, "Turn on the OrbitSearch hotkey switch to use this")
                 ctx.startActivity(Intent(ctx, SettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } else {
                 // Let the panel close first so it isn't in the screenshot or behind the power menu.
@@ -289,7 +289,7 @@ object Commands {
         How.DND -> {
             val nm = ctx.getSystemService(NotificationManager::class.java)
             if (!nm.isNotificationPolicyAccessGranted) {
-                toast(ctx, "Allow ORBIT, then run the command again")
+                toast(ctx, "Allow OrbitSearch, then run the command again")
                 openIntent(ctx, Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
             } else {
                 val on = nm.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL
@@ -312,7 +312,7 @@ object Commands {
         if (Settings.System.canWrite(ctx)) {
             block()
         } else {
-            toast(ctx, "Allow ORBIT to modify system settings, then run the command again")
+            toast(ctx, "Allow OrbitSearch to modify system settings, then run the command again")
             openIntent(ctx, Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:" + ctx.packageName)))
         }
         return true
