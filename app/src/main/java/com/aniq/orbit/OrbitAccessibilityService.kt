@@ -75,7 +75,7 @@ class OrbitAccessibilityService : AccessibilityService(), OrbitView.Host {
         val wm = getSystemService(WindowManager::class.java)
         val blur = wm.isCrossWindowBlurEnabled
         val dm = resources.displayMetrics
-        val width = minOf(dpi(720f), (dm.widthPixels * 0.92f).toInt())
+        val width = minOf(dpi(if (Dex.isOn(this) == true) 600f else 720f), (dm.widthPixels * 0.92f).toInt())
 
         val themed = ContextThemeWrapper(this, android.R.style.Theme_DeviceDefault_DayNight)
         val view = OrbitView(themed, this, opaque = !blur)

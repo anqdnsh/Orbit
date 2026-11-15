@@ -25,6 +25,7 @@ object Launcher {
                 is Item.Setting -> openSetting(ctx, item, mode)
                 is Item.Command -> Commands.run(ctx, item.entry, item.param)
                 is Item.Calc -> copy(ctx, item.value)
+                is Item.Ask -> false // handled inside the panel (Quick AI)
                 is Item.Web -> openWeb(ctx, item.query, mode)
                 Item.OrbitSettings -> start(ctx, Intent(ctx, SettingsActivity::class.java), mode)
             }

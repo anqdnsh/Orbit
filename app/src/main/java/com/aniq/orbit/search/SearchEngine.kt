@@ -3,6 +3,7 @@ package com.aniq.orbit.search
 import android.content.Context
 import com.aniq.orbit.CommandEntry
 import com.aniq.orbit.Commands
+import com.aniq.orbit.ai.AiSettings
 
 object SearchEngine {
     const val MAX = 8
@@ -16,6 +17,11 @@ object SearchEngine {
         if (raw.isBlank()) return suggestions(ctx, filter)
 
         val out = ArrayList<Item>(MAX)
+        // "ask …" goes straight to Quick AI.
+        val askPrefix = Regex("^ask\\s+(.+)", RegexOption.IGNORE_CASE).find(raw.trim())
+        if (filter == Filter.ALL && askPrefix != null) {
+            out += ask(ctx, askPrefix.groupValues[1])
+        }
         if (filter == Filter.ALL) Calc.evaluate(raw)?.let { out += Item.Calc(raw.trim(), it) }
         if (filter == Filter.ALL || filter == Filter.SYSTEM) {
             Commands.parametric(raw)?.let { (e, v) -> out += command(ctx, e, v) }
@@ -49,13 +55,24 @@ object SearchEngine {
         }
 
         scored.sortByDescending { it.second }
-        val room = MAX - out.size - (if (filter == Filter.ALL) 1 else 0)
+        val tail = if (filter == Filter.ALL) (if (askPrefix == null) 2 else 1) else 0
+        val room = MAX - out.size - tail
         scored.take(room.coerceAtLeast(0)).forEach { out += it.first }
-        if (filter == Filter.ALL) out += Item.Web(raw.trim())
+        if (filter == Filter.ALL) {
+            if (askPrefix == null) out += ask(ctx, raw.trim())
+            out += Item.Web(raw.trim())
+        }
         return out
     }
 
-    private fun command(ctx: Context, e: CommandEntry, v: Int?) = Item.Command(e, v, Commands.status(ctx, e))
+    fun ask(ctx: Context, q: String) = Item.Ask(
+        q,
+        if (AiSettings.ready(ctx)) "Tab  ·  answers here with ${AiSettings.provider(ctx).label}"
+        else "Tab  ·  set up AI first in ORBIT settings (Ctrl + ,)"
+    )
+
+    private fun command(ctx: Context, e: CommandEntry, v: Int?) =
+        Item.Command(e, v, Commands.title(ctx, e, v), Commands.status(ctx, e))
 
     private fun suggestions(ctx: Context, filter: Filter): List<Item> = when (filter) {
         Filter.SETTINGS -> SettingsCatalog.entries

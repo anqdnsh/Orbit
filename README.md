@@ -7,11 +7,25 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 - **Hotkey from any app:** Alt + Space (or Ctrl + Alt + Space / Meta + Space) shows the panel as an overlay. This needs the accessibility switch, see Setup.
 - **Search:** apps (including a work profile), 24 system settings pages, a calculator (`128*1.06`, `1,250 x 3`, `2^10`), and a web search fallback.
 - **Enter opens the first result.** The top hit is always highlighted. The arrow keys move the highlight.
-- **More keys:** Ctrl + Enter opens a pop-up window, Shift + Enter opens side by side, Ctrl + 1–8 opens that result directly, Tab switches filters, Ctrl + C copies a calculator answer, Esc closes.
+- **More keys:** Ctrl + Enter opens a pop-up window, Shift + Enter opens side by side, Ctrl + 1–8 opens that result directly, Ctrl + Tab switches filters, Ctrl + C copies a calculator answer, Esc closes.
 - **It learns:** things you open often or recently rank higher. That data stays on the tablet.
 - **Light / Dark / Match system**, set in ORBIT settings (search "orbit" or press Ctrl + ,).
 - **Liquid glass:** uses Android's real cross-window blur. When One UI turns blur off (for example in battery saver), it switches to a frosted tint.
 - **Other ways in:** the app icon, a Quick Settings tile, and Android's own per-app keyboard shortcut if your One UI version offers it.
+
+## Quick AI
+
+Type anything and press **Tab**. The answer streams into the panel. Enter or Tab asks a follow-up, Ctrl + C copies the answer, Ctrl + N starts a new question, and Esc goes back to search. Typing `ask …` and pressing Enter does the same thing.
+
+Set it up in ORBIT settings › Quick AI. You choose Claude, ChatGPT, Gemini, OpenRouter or a custom OpenAI-compatible server (for example Ollama on your PC), then paste your API key. The key is encrypted with the Android Keystore and only sent to that provider. Model names are editable because providers rename them often.
+
+## Device tools
+
+- **Device health** ("health", "ram", "storage", "battery"): RAM used, free storage, battery level and temperature, charging, and time since the last restart. It suggests a restart after 3 days. Enter opens Device care.
+- **Clean RAM / Optimise now:** open Samsung's Battery and device care (Memory › Clean now stops background apps). Since Android 14, apps can't close other apps themselves.
+- **Free up storage:** Android's free-up-space screen.
+- **Quit all apps** ("close all", "clear recents"): opens Recent apps, then you tap Close all.
+- **DeX:** shows Enter DeX or Exit DeX and opens Quick Settings with the DeX tile ready. No app can switch DeX directly. In DeX the panel is a little narrower.
 
 ## System controls
 

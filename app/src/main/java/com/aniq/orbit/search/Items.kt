@@ -2,7 +2,6 @@ package com.aniq.orbit.search
 
 import android.content.pm.LauncherActivityInfo
 import com.aniq.orbit.CommandEntry
-import com.aniq.orbit.Commands
 
 class AppEntry(
     val label: String,
@@ -27,7 +26,7 @@ class SettingEntry(
 
 enum class Filter(val label: String) { ALL("All"), APPS("Apps"), SYSTEM("System"), SETTINGS("Settings") }
 
-enum class Glyph { SEARCH, GEAR, GLOBE, CALC, ORBIT, POWER, BOLT }
+enum class Glyph { SEARCH, GEAR, GLOBE, CALC, ORBIT, POWER, BOLT, SPARK, PULSE }
 
 sealed class Item {
     abstract val title: String
@@ -52,10 +51,18 @@ sealed class Item {
         override val glyph = Glyph.GEAR
     }
 
-    class Command(val entry: CommandEntry, val param: Int?, override val subtitle: String) : Item() {
-        override val title = Commands.title(entry, param)
+    class Command(
+        val entry: CommandEntry, val param: Int?,
+        override val title: String, override val subtitle: String,
+    ) : Item() {
         override val usageKey = "cmd:" + entry.id
         override val glyph = entry.glyph
+    }
+
+    /** Quick AI: Tab (or Enter on this row) answers right inside the panel. */
+    class Ask(val query: String, override val subtitle: String) : Item() {
+        override val title = "Ask AI: “$query”"
+        override val glyph = Glyph.SPARK
     }
 
     class Calc(val expr: String, val value: String) : Item() {

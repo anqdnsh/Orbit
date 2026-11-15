@@ -38,7 +38,7 @@ class SearchActivity : Activity(), OrbitView.Host {
         setContentView(view)
 
         val dm = resources.displayMetrics
-        window.setLayout(minOf(dpi(720f), (dm.widthPixels * 0.92f).toInt()), WindowManager.LayoutParams.WRAP_CONTENT)
+        window.setLayout(minOf(dpi(if (Dex.isOn(this) == true) 600f else 720f), (dm.widthPixels * 0.92f).toInt()), WindowManager.LayoutParams.WRAP_CONTENT)
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         if (blur) window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
         window.attributes = window.attributes.apply {

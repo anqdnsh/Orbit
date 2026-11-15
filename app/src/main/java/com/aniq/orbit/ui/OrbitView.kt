@@ -1,9 +1,16 @@
 package com.aniq.orbit.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.drawable.GradientDrawable
+import android.graphics.Typeface
 import android.text.Editable
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.text.InputType
 import android.text.TextWatcher
 import android.util.TypedValue
@@ -20,6 +27,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.aniq.orbit.Launcher
 import com.aniq.orbit.Prefs
+import com.aniq.orbit.ai.AiChat
+import com.aniq.orbit.ai.AiSettings
+import com.aniq.orbit.ai.ChatMessage
 import com.aniq.orbit.search.AppIndex
 import com.aniq.orbit.search.Filter
 import com.aniq.orbit.search.Glyph
@@ -48,13 +58,25 @@ class OrbitView(
     private var results: List<Item> = emptyList()
     private var selected = 0
     private var filter = Filter.ALL
-    private val onIndexChanged: () -> Unit = { refresh() }
+    private val onIndexChanged: () -> Unit = { if (!quick) refresh() }
+
+    // Quick AI (Raycast-style): Tab answers inside the panel instead of the result list.
+    private var quick = false
+    private lateinit var chipsView: View
+    private lateinit var listView: LinearLayout
+    private val answerBox = LinearLayout(context)
+    private val answerHeader = TextView(context)
+    private val answerText = TextView(context)
+    private val answerScroll = MaxHeightScroll(context)
+    private val footerHint = TextView(context)
 
     init {
         addView(panel, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         panel.addView(searchRow())
-        panel.addView(chipRow())
+        chipsView = chipRow()
+        panel.addView(chipsView)
         panel.addView(divider())
+        panel.addView(buildAnswerBox())
 
         val list = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -78,6 +100,7 @@ class OrbitView(
             visibility = GONE
         }
         list.addView(empty)
+        listView = list
         panel.addView(list)
         panel.addView(divider())
         panel.addView(footer())
@@ -85,10 +108,13 @@ class OrbitView(
         input.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) = refresh()
+            override fun afterTextChanged(s: Editable?) { if (!quick) refresh() }
         })
         // On-screen keyboard "Go" key behaves like Enter.
-        input.setOnEditorActionListener { _, _, _ -> open(selected, Launcher.Mode.NORMAL); true }
+        input.setOnEditorActionListener { _, _, _ ->
+            if (quick) followUp() else open(selected, Launcher.Mode.NORMAL)
+            true
+        }
         refresh()
     }
 
@@ -171,11 +197,37 @@ class OrbitView(
             paint.isFakeBoldText = true
         })
         addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
-        addView(TextView(context).apply {
-            text = "↵ Open    Ctrl ↵ Pop-up    Shift ↵ Side by side    Esc Close"
+        addView(footerHint.apply {
+            text = SEARCH_HINT
             setTextColor(pal.sub)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
         })
+    }
+
+    private fun buildAnswerBox(): View = answerBox.apply {
+        orientation = LinearLayout.VERTICAL
+        visibility = GONE
+        setPadding(context.dpi(22f), context.dpi(4f), context.dpi(22f), context.dpi(8f))
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(ImageView(context).apply { setImageDrawable(StrokeIcon(Glyph.SPARK, pal.sub)) },
+                LinearLayout.LayoutParams(context.dpi(16f), context.dpi(16f)).apply { marginEnd = context.dpi(8f) })
+            addView(answerHeader.apply {
+                setTextColor(pal.sub)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            })
+        })
+        answerText.apply {
+            setTextColor(pal.text)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setLineSpacing(0f, 1.25f)
+            setTextIsSelectable(false)
+            setPadding(0, context.dpi(10f), 0, context.dpi(6f))
+        }
+        answerScroll.addView(answerText)
+        answerScroll.isVerticalScrollBarEnabled = true
+        addView(answerScroll)
     }
 
     /** Borderless: sections are separated by space, not lines. */
@@ -226,11 +278,115 @@ class OrbitView(
 
     private fun open(i: Int, mode: Launcher.Mode) {
         val item = results.getOrNull(i) ?: return
+        if (item is Item.Ask) { startQuickAi(item.query); return }
         if (Launcher.open(context, item, mode)) host.dismiss()
+    }
+
+    // ---------- Quick AI ----------
+
+    private fun startQuickAi(raw: String) {
+        val q = raw.trim().let { Regex("^ask\\s+", RegexOption.IGNORE_CASE).replace(it, "") }
+        if (q.isEmpty()) return
+        quick = true
+        AiChat.clear()
+        chipsView.visibility = GONE
+        listView.visibility = GONE
+        answerBox.visibility = VISIBLE
+        input.setText("")
+        input.hint = "Ask a follow-up…"
+        footerHint.text = QUICK_HINT
+        val p = AiSettings.provider(context)
+        answerHeader.text = "Quick AI  ·  ${p.label}  ·  ${AiSettings.model(context, p).ifBlank { "no model set" }}"
+        ask(q)
+    }
+
+    private fun ask(q: String) {
+        if (!AiSettings.ready(context)) {
+            AiChat.messages += ChatMessage(true, q)
+            AiChat.messages += ChatMessage(false,
+                "⚠ AI isn't set up yet. Press Ctrl + , to open ORBIT settings, choose a provider and paste your API key.")
+            renderAnswer()
+            return
+        }
+        AiChat.send(context, q, onUpdate = { renderAnswer() }, onDone = { renderAnswer() })
+    }
+
+    private fun followUp() {
+        val q = input.text?.toString()?.trim().orEmpty()
+        if (q.isEmpty() || AiChat.busy) return
+        input.setText("")
+        ask(q)
+    }
+
+    private fun exitQuickAi() {
+        AiChat.clear()
+        quick = false
+        answerBox.visibility = GONE
+        chipsView.visibility = VISIBLE
+        listView.visibility = VISIBLE
+        input.hint = "Search apps, settings, maths…"
+        footerHint.text = SEARCH_HINT
+        input.setText("")
+        refresh()
+    }
+
+    private fun renderAnswer() {
+        val sb = SpannableStringBuilder()
+        AiChat.messages.forEachIndexed { i, m ->
+            if (i > 0) sb.append(if (m.fromUser) "\n\n" else "\n")
+            val start = sb.length
+            if (m.fromUser) {
+                sb.append(m.text)
+                sb.setSpan(ForegroundColorSpan(pal.sub), start, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                sb.setSpan(StyleSpan(Typeface.BOLD), start, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            } else {
+                sb.append(if (m.text.isEmpty() && AiChat.busy) "Thinking…" else plain(m.text))
+            }
+        }
+        answerText.text = sb
+        answerScroll.post { answerScroll.scrollTo(0, answerText.height) }
+    }
+
+    /** Light markdown clean-up so answers read well as plain text. */
+    private fun plain(md: String): String = md.lines().joinToString("\n") { line ->
+        var l = line
+        l = l.replace(Regex("^#{1,6}\\s+"), "")
+        l = l.replace(Regex("^(\\s*)[-*]\\s+"), "$1• ")
+        l.replace("**", "").replace("__", "").replace("`", "")
+    }
+
+    private fun copyAnswer() {
+        val last = AiChat.messages.lastOrNull { !it.fromUser }?.text ?: return
+        context.getSystemService(ClipboardManager::class.java)
+            .setPrimaryClip(ClipData.newPlainText("ORBIT AI", plain(last)))
+    }
+
+    private fun quickKey(event: KeyEvent): Boolean {
+        val ctrl = event.isCtrlPressed
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_ESCAPE, KeyEvent.KEYCODE_BACK -> { exitQuickAi(); return true }
+            KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_TAB -> { followUp(); return true }
+            KeyEvent.KEYCODE_DPAD_DOWN -> { answerScroll.smoothScrollBy(0, context.dpi(80f)); return true }
+            KeyEvent.KEYCODE_DPAD_UP -> { answerScroll.smoothScrollBy(0, -context.dpi(80f)); return true }
+            KeyEvent.KEYCODE_C -> if (ctrl && input.selectionStart == input.selectionEnd) { copyAnswer(); return true }
+            KeyEvent.KEYCODE_N -> if (ctrl) {
+                AiChat.clear()
+                renderAnswer()
+                input.hint = "Ask a new question…"
+                return true
+            }
+            KeyEvent.KEYCODE_COMMA -> if (ctrl) {
+                if (Launcher.open(context, Item.OrbitSettings, Launcher.Mode.NORMAL)) host.dismiss()
+                return true
+            }
+        }
+        return false
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action != KeyEvent.ACTION_DOWN) return super.dispatchKeyEvent(event)
+        if (quick && quickKey(event)) return true
+        if (quick) return super.dispatchKeyEvent(event)
         val ctrl = event.isCtrlPressed
         when (event.keyCode) {
             KeyEvent.KEYCODE_ESCAPE, KeyEvent.KEYCODE_BACK -> { host.dismiss(); return true }
@@ -252,9 +408,15 @@ class OrbitView(
                 return true
             }
             KeyEvent.KEYCODE_TAB -> {
-                val n = Filter.entries.size
-                val step = if (event.isShiftPressed) n - 1 else 1
-                setFilter(Filter.entries[(filter.ordinal + step) % n])
+                if (ctrl) {
+                    // Ctrl + Tab / Ctrl + Shift + Tab: switch filter.
+                    val n = Filter.entries.size
+                    val step = if (event.isShiftPressed) n - 1 else 1
+                    setFilter(Filter.entries[(filter.ordinal + step) % n])
+                } else {
+                    // Tab: Quick AI on whatever you've typed.
+                    startQuickAi(input.text?.toString().orEmpty())
+                }
                 return true
             }
             KeyEvent.KEYCODE_DEL -> if (ctrl) { input.setText(""); return true }
@@ -345,6 +507,20 @@ class OrbitView(
 
     override fun onDetachedFromWindow() {
         AppIndex.removeListener(onIndexChanged)
+        if (quick) AiChat.clear()
         super.onDetachedFromWindow()
+    }
+
+    companion object {
+        private const val SEARCH_HINT = "↵ Open    Tab Ask AI    Ctrl ↵ Pop-up    Esc Close"
+        private const val QUICK_HINT = "↵ / Tab Follow-up    Ctrl C Copy    Ctrl N New    Esc Back"
+    }
+}
+
+/** Scrolls when the answer gets long, so the panel never grows past half the screen. */
+class MaxHeightScroll(context: Context) : android.widget.ScrollView(context) {
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val max = (resources.displayMetrics.heightPixels * 0.5f).toInt()
+        super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(max, View.MeasureSpec.AT_MOST))
     }
 }

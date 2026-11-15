@@ -17,6 +17,9 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
+import com.aniq.orbit.ai.AiProvider
+import com.aniq.orbit.ai.AiSettings
+import com.aniq.orbit.ai.KeyVault
 import com.aniq.orbit.ui.Palette
 import com.aniq.orbit.ui.dp
 import com.aniq.orbit.ui.dpi
@@ -127,6 +130,60 @@ class SettingsActivity : Activity() {
             })
         })
 
+        // Quick AI
+        col.addView(card {
+            val ctx = this@SettingsActivity
+            val current = AiSettings.provider(ctx)
+            addView(text("Quick AI", 18f, pal.text, bold = true))
+            addView(text(
+                "Type anything, press Tab, and the answer appears right in ORBIT. Use your own API key. " +
+                    "It's encrypted on this tablet and only sent to the provider you choose.",
+                14f, pal.sub
+            ))
+            addView(text("Provider", 15f, pal.text, bold = true).also { pad(it, top = 12f) })
+            addView(radios(AiProvider.entries.map { it.label }, AiProvider.entries.indexOf(current)) { i ->
+                AiSettings.setProvider(ctx, AiProvider.entries[i])
+                recreate()
+            })
+
+            addView(text("API key", 15f, pal.text, bold = true).also { pad(it, top = 12f) })
+            val keyField = field(
+                KeyVault.hint(ctx, current)?.let { "Saved ($it). Paste a new key to replace it" }
+                    ?: "Paste your key (get one at ${current.keyUrl})",
+                password = true,
+            )
+            addView(keyField)
+
+            addView(text("Model", 15f, pal.text, bold = true).also { pad(it, top = 12f) })
+            val modelField = field(current.defaultModel.ifBlank { "e.g. llama3.1" }).apply {
+                setText(AiSettings.model(ctx, current))
+            }
+            addView(modelField)
+            addView(text("Model names change often. If you get a “not found” error, copy the current name from your provider's site.", 12f, pal.sub))
+
+            var urlField: android.widget.EditText? = null
+            if (current == AiProvider.CUSTOM) {
+                addView(text("Server address", 15f, pal.text, bold = true).also { pad(it, top = 12f) })
+                urlField = field("e.g. http://192.168.1.20:11434/v1 (Ollama on your PC)").apply {
+                    setText(AiSettings.customUrl(ctx))
+                }
+                addView(urlField)
+            }
+
+            addView(button("Save") {
+                val k = keyField.text.toString().trim()
+                if (k.isNotEmpty()) KeyVault.save(ctx, current, k)
+                AiSettings.setModel(ctx, current, modelField.text.toString())
+                urlField?.let { AiSettings.setCustomUrl(ctx, it.text.toString()) }
+                android.widget.Toast.makeText(ctx, "Saved", android.widget.Toast.LENGTH_SHORT).show()
+                recreate()
+            })
+            if (KeyVault.has(ctx, current)) addView(button("Remove saved key") {
+                KeyVault.remove(ctx, current)
+                recreate()
+            })
+        })
+
         // Other ways to open
         col.addView(card {
             addView(text("Other ways to open", 18f, pal.text, bold = true))
@@ -154,8 +211,12 @@ class SettingsActivity : Activity() {
                 "Ctrl + Enter" to "Open as a pop-up window",
                 "Shift + Enter" to "Open side by side",
                 "Ctrl + 1–8" to "Open that result directly",
-                "Tab / Shift + Tab" to "Switch filter: All, Apps, System, Settings",
-                "Ctrl + C" to "Copy a calculator answer",
+                "Tab" to "Quick AI: answer what you typed, right in the panel",
+                "Enter / Tab (in Quick AI)" to "Ask a follow-up",
+                "Ctrl + N (in Quick AI)" to "Start a new question",
+                "Esc (in Quick AI)" to "Back to search",
+                "Ctrl + Tab" to "Switch filter: All, Apps, System, Settings",
+                "Ctrl + C" to "Copy a calculator or AI answer",
                 "Ctrl + Backspace" to "Clear the search",
                 "Ctrl + ," to "ORBIT settings",
                 "Esc" to "Close",
@@ -232,6 +293,26 @@ class SettingsActivity : Activity() {
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dpi(10f) }
+    }
+
+    private fun field(hintText: String, password: Boolean = false) = android.widget.EditText(this).apply {
+        hint = hintText
+        setHintTextColor(pal.sub)
+        setTextColor(pal.text)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+        isSingleLine = true
+        inputType = if (password)
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        else android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        minHeight = dpi(48f)
+        setPadding(dpi(14f), 0, dpi(14f), 0)
+        background = GradientDrawable().apply {
+            cornerRadius = dp(12f)
+            setColor(pal.pageBg)
+        }
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dpi(6f) }
     }
 
     private fun radios(labels: List<String>, checked: Int, onPick: (Int) -> Unit) = RadioGroup(this).apply {

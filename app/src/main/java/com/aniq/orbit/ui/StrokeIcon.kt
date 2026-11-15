@@ -72,6 +72,26 @@ class StrokeIcon(private val glyph: Glyph, color: Int) : Drawable() {
                 path.close()
                 c.drawPath(path, p)
             }
+            Glyph.SPARK -> {
+                path.reset()
+                path.moveTo(12f, 3f)
+                path.quadTo(13f, 11f, 21f, 12f)
+                path.quadTo(13f, 13f, 12f, 21f)
+                path.quadTo(11f, 13f, 3f, 12f)
+                path.quadTo(11f, 11f, 12f, 3f)
+                path.close()
+                c.drawPath(path, p)
+            }
+            Glyph.PULSE -> {
+                path.reset()
+                path.moveTo(2.5f, 12f)
+                path.lineTo(7f, 12f)
+                path.lineTo(9.5f, 6f)
+                path.lineTo(13.5f, 18f)
+                path.lineTo(16f, 12f)
+                path.lineTo(21.5f, 12f)
+                c.drawPath(path, p)
+            }
             Glyph.ORBIT -> {
                 c.drawCircle(12f, 12f, 3f, p)
                 c.save()

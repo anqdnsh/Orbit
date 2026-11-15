@@ -23,7 +23,7 @@ import kotlin.math.roundToInt
  *  - runs straight away once you have granted a one-time permission,
  *  - opens the right Settings page or pop-up panel when Android doesn't let apps do it.
  */
-enum class How { GLOBAL, MEDIA, VOLUME, VOLUME_SET, TORCH, BRIGHTNESS, ROTATION, DND, SETTINGS }
+enum class How { GLOBAL, MEDIA, VOLUME, VOLUME_SET, TORCH, BRIGHTNESS, ROTATION, DND, SETTINGS, HEALTH, DEVICE_CARE, DEX }
 
 class CommandEntry(
     val id: String,
@@ -63,8 +63,25 @@ object Commands {
         g("lock", "Lock screen", listOf("lock", "sleep", "screen off"), AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN, Glyph.POWER),
         g("screenshot", "Take screenshot", listOf("screenshot", "screen shot", "capture"), AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT),
         g("notifications", "Notifications panel", listOf("notifications", "shade"), AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS),
-        g("quick_settings", "Quick Settings panel", listOf("quick settings", "toggles", "dex", "samsung dex"), AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS),
+        g("quick_settings", "Quick Settings panel", listOf("quick settings", "toggles"), AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS),
         g("recents", "Recent apps", listOf("recents", "overview", "multitask"), AccessibilityService.GLOBAL_ACTION_RECENTS),
+        g("quit_all", "Quit all apps", listOf("quit all", "close all", "clear recents", "close apps", "kill apps", "clear all"),
+            AccessibilityService.GLOBAL_ACTION_RECENTS, Glyph.POWER, "Opens Recent apps, then tap Close all"),
+
+        // Device optimise: ORBIT reads the numbers, Samsung's Device care does the cleaning.
+        CommandEntry("health", "Device health", listOf("health", "optimise", "optimize", "ram", "memory", "storage", "battery", "temperature", "status"),
+            How.HEALTH, glyph = Glyph.PULSE),
+        CommandEntry("clean_ram", "Clean RAM", listOf("clean ram", "free memory", "memory", "boost", "ram", "close background apps"),
+            How.DEVICE_CARE, arg = 1, glyph = Glyph.BOLT),
+        CommandEntry("optimise", "Optimise now", listOf("optimise", "optimize", "device care", "speed up", "clean"),
+            How.DEVICE_CARE, arg = 0, glyph = Glyph.BOLT),
+        page("free_storage", "Free up storage", listOf("storage", "free space", "clean storage", "cleanup", "delete files"),
+            "android.os.storage.action.MANAGE_STORAGE", "android.settings.INTERNAL_STORAGE_SETTINGS"),
+        page("battery_usage", "Battery usage", listOf("battery", "battery usage", "drain"),
+            "android.intent.action.POWER_USAGE_SUMMARY"),
+
+        // DeX: no app can switch it directly, so open Quick Settings with the DeX tile ready.
+        CommandEntry("dex", "DeX", listOf("dex", "desktop mode", "samsung dex", "enter dex", "exit dex"), How.DEX, glyph = Glyph.ORBIT),
         g("split", "Split screen", listOf("split", "side by side", "multi window"), AccessibilityService.GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN),
         g("home", "Go home", listOf("home", "desktop"), AccessibilityService.GLOBAL_ACTION_HOME),
 
@@ -109,7 +126,9 @@ object Commands {
         return null
     }
 
-    fun title(e: CommandEntry, param: Int?): String = when {
+    fun title(ctx: Context, e: CommandEntry, param: Int?): String = when {
+        e.how == How.HEALTH -> Health.read(ctx).title
+        e.how == How.DEX -> when (Dex.isOn(ctx)) { true -> "Exit DeX"; false -> "Enter DeX"; null -> "Enter / exit DeX" }
         param == null -> e.title
         e.how == How.VOLUME_SET -> "Set volume to $param%"
         else -> "Set brightness to $param%"
@@ -129,11 +148,18 @@ object Commands {
                 if (ctx.getSystemService(NotificationManager::class.java).isNotificationPolicyAccessGranted) "System · Runs now"
                 else "Asks permission once, then runs"
             How.SETTINGS -> if (e.settings.firstOrNull()?.contains(".panel.") == true) "Opens Settings panel" else "Opens Settings"
+            How.HEALTH -> Health.read(ctx).subtitle + "  ·  ↵ Device care"
+            How.DEVICE_CARE -> if (e.arg == 1) "Opens Device care › Memory, then tap Clean now" else "Opens Device care"
+            How.DEX -> if (OrbitAccessibilityService.instance != null) "Opens Quick Settings, then tap the DeX tile"
+            else "Needs the ORBIT hotkey switch (opens setup)"
         }
     }
 
     /** Returns true when the ORBIT panel should close. */
     fun run(ctx: Context, e: CommandEntry, param: Int?): Boolean = when (e.how) {
+        How.HEALTH -> DeviceCare.openDashboard(ctx)
+        How.DEVICE_CARE -> if (e.arg == 1) DeviceCare.openMemory(ctx) else DeviceCare.openDashboard(ctx)
+        How.DEX -> run(ctx, CommandEntry("qs", "", emptyList(), How.GLOBAL, AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS), null)
         How.GLOBAL -> {
             val svc = OrbitAccessibilityService.instance
             if (svc == null) {
