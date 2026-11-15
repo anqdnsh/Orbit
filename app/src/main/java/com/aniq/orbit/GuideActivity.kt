@@ -21,9 +21,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import com.aniq.orbit.ai.AiProvider
-import com.aniq.orbit.ai.AiSettings
-import com.aniq.orbit.ai.KeyVault
 import com.aniq.orbit.search.Glyph
 import com.aniq.orbit.ui.GlassPanel
 import com.aniq.orbit.ui.Motion
@@ -43,7 +40,7 @@ class GuideActivity : Activity() {
         @Volatile var onHotkey: (() -> Unit)? = null
         fun done(ctx: android.content.Context) = Prefs.of(ctx).getBoolean("guide_done", false)
         private var resumeAt = 0
-        private const val STEPS = 6
+        private const val STEPS = 5
     }
 
     private lateinit var pal: Palette
@@ -54,15 +51,12 @@ class GuideActivity : Activity() {
     private lateinit var primary: TextView
     private lateinit var back: TextView
     private lateinit var skip: TextView
-    private var keyField: EditText? = null
-    private var aiChoice: AiProvider = AiProvider.CLAUDE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         pal = Palette.current(this)
         setTheme(if (pal.dark) android.R.style.Theme_DeviceDefault_NoActionBar else android.R.style.Theme_DeviceDefault_Light_NoActionBar)
         super.onCreate(savedInstanceState)
         step = savedInstanceState?.getInt("step") ?: resumeAt
-        aiChoice = AiSettings.provider(this)
         window.decorView.setBackgroundColor(if (pal.dark) 0xFF0F0F10.toInt() else pal.pageBg)
         val light = if (pal.dark) 0 else
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
@@ -156,7 +150,6 @@ class GuideActivity : Activity() {
 
     private fun next() {
         when (step) {
-            4 -> saveAi()
             STEPS - 1 -> { finishGuide(); return }
         }
         go(1)
@@ -196,19 +189,16 @@ class GuideActivity : Activity() {
         back.visibility = if (step == 0) View.GONE else View.VISIBLE
         primary.text = when (step) {
             0 -> "Get started   ↵"
-            4 -> if (AiSettings.ready(this)) "Next   ↵" else "Save or skip   ↵"
             STEPS - 1 -> "Done   ↵"
             else -> "Next   ↵"
         }
         onHotkey = null
-        keyField = null
         body.removeAllViews()
         when (step) {
             0 -> welcome()
             1 -> hotkey()
             2 -> tryIt()
             3 -> look()
-            4 -> quickAi()
             else -> extras()
         }
         if (dir != 0) {
@@ -242,7 +232,7 @@ class GuideActivity : Activity() {
         for ((t, d) in listOf(
             "Apps, files & settings" to "Fuzzy search that learns what you use. Space previews files.",
             "System & tools" to "Restart, lock, area screenshot, focus timer, keep awake, DeX.",
-            "Quick AI & maths" to "Tab asks AI. Type sums or currency to get answers.",
+            "Maths & currency" to "Type sums like 128*1.06 or 100 usd to myr for instant answers.",
         )) grid.addView(infoCard(t, d), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
             marginEnd = dpi(10f)
         })
@@ -337,45 +327,6 @@ class GuideActivity : Activity() {
         body.addView(row, spaced(22f))
     }
 
-    private fun quickAi() {
-        title("Quick AI (optional)")
-        para("Type anything in OrbitSearch and press Tab: the answer appears right in the panel. Use your own API key; it's encrypted on this tablet and only sent to the provider you pick.")
-        val chips = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for (p in listOf(AiProvider.CLAUDE, AiProvider.OPENAI, AiProvider.GEMINI, AiProvider.OPENROUTER)) {
-            val on = p == aiChoice
-            chips.addView(text(14f, if (on) pal.onAccent else pal.text, bold = on).apply {
-                text = p.label.substringBefore(" (")
-                gravity = Gravity.CENTER
-                setPadding(dpi(16f), 0, dpi(16f), 0)
-                background = GradientDrawable().apply { cornerRadius = dp(999f); setColor(if (on) pal.accent else pal.chip) }
-                setOnClickListener { aiChoice = p; render(0) }
-            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dpi(40f)).apply { marginEnd = dpi(8f) })
-        }
-        body.addView(chips, spaced(20f))
-        val saved = KeyVault.hint(this, aiChoice)
-        keyField = EditText(this).apply {
-            hint = saved?.let { "Saved ($it). Paste a new key to replace it" } ?: "Paste your ${aiChoice.label.substringBefore(" (")} API key (from ${aiChoice.keyUrl})"
-            setHintTextColor(pal.sub)
-            setTextColor(pal.text)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
-            isSingleLine = true
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setPadding(dpi(16f), 0, dpi(16f), 0)
-            background = GradientDrawable().apply { cornerRadius = dp(14f); setColor(pal.chip) }
-        }
-        body.addView(keyField, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpi(52f)).apply { topMargin = dpi(12f) })
-        body.addView(text(13f, pal.sub).apply {
-            text = "Model: ${AiSettings.model(this@GuideActivity, aiChoice)}  ·  change it, or use OpenRouter / your own server, in OrbitSearch settings."
-            setPadding(0, dpi(8f), 0, 0)
-        })
-    }
-
-    private fun saveAi() {
-        val k = keyField?.text?.toString()?.trim().orEmpty()
-        AiSettings.setProvider(this, aiChoice)
-        if (k.isNotEmpty()) KeyVault.save(this, aiChoice, k)
-    }
-
     private fun extras() {
         title("Extras")
         para("Optional permissions for the tools. Each one is only used for that feature.")
@@ -395,7 +346,7 @@ class GuideActivity : Activity() {
         }, spaced(10f))
         body.addView(text(13f, pal.sub, bold = true).apply { text = "HANDY SHORTCUTS"; letterSpacing = 0.1f; setPadding(0, dpi(22f), 0, dpi(8f)) })
         val keys = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for (k in listOf("Tab  Ask AI", "Ctrl /  Shortcuts", "Alt ⇧ S  Screenshot", "↓ Space  Preview")) keys.addView(
+        for (k in listOf("Ctrl /  Shortcuts", "Alt ⇧ S  Screenshot", "↓ Space  Preview")) keys.addView(
             text(13f, pal.text, bold = true).apply {
                 text = k
                 setPadding(dpi(12f), dpi(8f), dpi(12f), dpi(8f))

@@ -59,12 +59,6 @@ sealed class Item {
         override val glyph = entry.glyph
     }
 
-    /** Quick AI: Tab (or Enter on this row) answers right inside the panel. */
-    class Ask(val query: String, override val subtitle: String) : Item() {
-        override val title = "Ask AI: “$query”"
-        override val glyph = Glyph.SPARK
-    }
-
     class File(val entry: FileEntry, override val subtitle: String) : Item() {
         override val title = entry.name
         override val usageKey = "file:" + entry.id

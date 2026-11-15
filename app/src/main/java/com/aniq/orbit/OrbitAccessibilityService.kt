@@ -82,7 +82,9 @@ class OrbitAccessibilityService : AccessibilityService(), OrbitView.Host {
             return true
         }
         // Alt + Shift + S: area screenshot from anywhere.
-        if (event.keyCode == KeyEvent.KEYCODE_S && event.isAltPressed && event.isShiftPressed && !event.isCtrlPressed) {
+        if (event.keyCode == KeyEvent.KEYCODE_S && event.isAltPressed && event.isShiftPressed && !event.isCtrlPressed &&
+            Feature.AREA.on(this)
+        ) {
             if (down) {
                 swallowUp = event.keyCode
                 if (event.repeatCount == 0) main.post { close(animated = false); area.start() }
