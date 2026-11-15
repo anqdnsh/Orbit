@@ -36,16 +36,16 @@ class Palette(
             divider = 0x1A0B1220,
             chip = 0x99FFFFFF.toInt(),
             tile = 0x99FFFFFF.toInt(),
-            accent = 0xFF1F5FD6.toInt(),
+            accent = 0xFFC42B33.toInt(),        // deep Raycast-style red
             onAccent = 0xFFFFFFFF.toInt(),
-            selection = 0xFF1F5FD6.toInt(),
-            onSelection = 0xFFFFFFFF.toInt(),
-            onSelectionSub = 0xE6FFFFFF.toInt(),
+            selection = 0x140B1220,
+            onSelection = 0xFF0B1220.toInt(),
+            onSelectionSub = 0xFF3D4A63.toInt(),
             pageBg = 0xFFEEF1F7.toInt(),
             card = 0xFFFFFFFF.toInt(),
         )
 
-        /** Neutral charcoal, Raycast-style: no blue cast, grey highlight, light primary buttons. */
+        /** Neutral charcoal, Raycast-style: no blue cast, grey highlight, red accent. */
         val DARK = Palette(
             dark = true,
             fill = 0xC71C1C1E.toInt(),
@@ -57,8 +57,8 @@ class Palette(
             divider = 0x14FFFFFF,
             chip = 0x12FFFFFF,
             tile = 0x14FFFFFF,
-            accent = 0xFFEDEDED.toInt(),
-            onAccent = 0xFF1C1C1E.toInt(),
+            accent = 0xFFD7373F.toInt(),        // red, white text passes contrast
+            onAccent = 0xFFFFFFFF.toInt(),
             selection = 0x26FFFFFF,
             onSelection = 0xFFFFFFFF.toInt(),
             onSelectionSub = 0xFFB4B4B8.toInt(),
@@ -74,6 +74,9 @@ class Palette(
         }
 
         fun current(ctx: Context): Palette = if (isDark(ctx)) DARK else LIGHT
+
+        /** "Reduce effects": no blur, solid panel. Saves GPU work and battery. */
+        fun reduced(ctx: Context): Boolean = Prefs.of(ctx).getBoolean("reduce_effects", false)
     }
 }
 

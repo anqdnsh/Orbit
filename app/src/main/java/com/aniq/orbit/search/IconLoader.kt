@@ -27,6 +27,9 @@ object IconLoader {
         }
     }
 
+    /** Drop cached icons when Android needs memory back. */
+    fun trim() = cache.evictAll()
+
     fun prewarm(apps: List<AppEntry>) {
         worker.execute { apps.forEach { if (cache.get(it.key) == null) fetch(it) } }
     }

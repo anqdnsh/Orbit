@@ -20,6 +20,9 @@ class RowView(context: Context, private val pal: Palette) : LinearLayout(context
     private val sub = TextView(context)
     private val key = TextView(context)
     private var item: Item? = null
+    // Two icons per row, made once per bind instead of on every highlight change.
+    private var iconOn: StrokeIcon? = null
+    private var iconOff: StrokeIcon? = null
 
     init {
         orientation = HORIZONTAL
@@ -60,6 +63,8 @@ class RowView(context: Context, private val pal: Palette) : LinearLayout(context
             IconLoader.load(it.app, icon)
         } else {
             icon.tag = null
+            iconOn = StrokeIcon(it.glyph, pal.accent)
+            iconOff = StrokeIcon(it.glyph, pal.text)
             icon.background = tileBg
             val p = context.dpi(8f)
             icon.setPadding(p, p, p, p)
@@ -81,7 +86,7 @@ class RowView(context: Context, private val pal: Palette) : LinearLayout(context
         }
         if (it !is Item.App) {
             tileBg.setColor(if (selected) 0x29FFFFFF else pal.tile)
-            icon.setImageDrawable(StrokeIcon(it.glyph, fg))
+            icon.setImageDrawable(if (selected) iconOn else iconOff)
         }
         contentDescription = "${it.title}, ${it.subtitle}"
     }

@@ -12,33 +12,55 @@ object SearchEngine {
      * Ranked results. Index 0 is always the best match, so Enter opens it.
      * Order: calculator answer or "volume 40"-style command → apps / system / settings by score → web search.
      */
-    fun search(ctx: Context, raw: String, filter: Filter): List<Item> {
+    /** Time the last search took, in microseconds (shown in ORBIT settings › Performance). */
+    @Volatile var lastSearchMicros = 0L
+        private set
+
+    /**
+     * Ranked results. Index 0 is always the best match, so Enter opens it.
+     * Order: AI ("ask …") / calculator / currency / typed command → apps, system, settings
+     * and files by score → Ask AI → web search. [onAsync] runs when slower parts (files,
+     * currency rates) arrive, so the caller can refresh.
+     */
+    fun search(ctx: Context, raw: String, filter: Filter, onAsync: () -> Unit = {}): List<Item> {
+        val t0 = System.nanoTime()
+        val r = searchInner(ctx, raw, filter, onAsync)
+        lastSearchMicros = (System.nanoTime() - t0) / 1000
+        return r
+    }
+
+    private fun searchInner(ctx: Context, raw: String, filter: Filter, onAsync: () -> Unit): List<Item> {
         val q = Text.normalize(raw)
+        val trimmed = raw.trim()
+        if (filter == Filter.FILES) return files(ctx, trimmed, onAsync, MAX)
         if (raw.isBlank()) return suggestions(ctx, filter)
 
         val out = ArrayList<Item>(MAX)
         // "ask …" goes straight to Quick AI.
-        val askPrefix = Regex("^ask\\s+(.+)", RegexOption.IGNORE_CASE).find(raw.trim())
-        if (filter == Filter.ALL && askPrefix != null) {
-            out += ask(ctx, askPrefix.groupValues[1])
+        val askPrefix = Regex("^ask\\s+(.+)", RegexOption.IGNORE_CASE).find(trimmed)
+        if (filter == Filter.ALL && askPrefix != null) out += ask(ctx, askPrefix.groupValues[1])
+        if (filter == Filter.ALL) {
+            Calc.evaluate(raw)?.let { out += Item.Calc(trimmed, it) }
+            Currency.parse(raw)?.let { out += money(ctx, it, onAsync) }
         }
-        if (filter == Filter.ALL) Calc.evaluate(raw)?.let { out += Item.Calc(raw.trim(), it) }
         if (filter == Filter.ALL || filter == Filter.SYSTEM) {
             Commands.parametric(raw)?.let { (e, v) -> out += command(ctx, e, v) }
         }
 
-        val scored = ArrayList<Pair<Item, Int>>()
+        // Score first, build result rows only for the winners (commands read live device state).
+        val scored = ArrayList<Pair<() -> Item, Int>>()
+        fun put(score: Int, make: () -> Item) { scored.add(Pair(make, score)) }
         if (filter == Filter.ALL || filter == Filter.APPS) {
             for (a in AppIndex.apps) {
                 val s = Matcher.score(q, a.norm, a.initials)
-                if (s >= 0) scored += Item.App(a) to s + Usage.boost(a.key)
+                if (s >= 0) put(s + Usage.boost(a.key)) { Item.App(a) }
             }
         }
         if (filter == Filter.ALL || filter == Filter.SYSTEM) {
             for (e in Commands.entries) {
                 var s = Matcher.score(q, e.norm, e.initials)
                 for (k in e.keywordNorms) s = maxOf(s, Matcher.score(q, k, "") - 40)
-                if (s >= 0) scored += command(ctx, e, null) to s - 20 + Usage.boost("cmd:" + e.id)
+                if (s >= 0) put(s - 20 + Usage.boost("cmd:" + e.id)) { command(ctx, e, null) }
             }
         }
         if (filter == Filter.ALL || filter == Filter.SETTINGS) {
@@ -46,23 +68,52 @@ object SearchEngine {
                 var s = Matcher.score(q, e.norm, e.initials)
                 for (k in e.keywordNorms) s = maxOf(s, Matcher.score(q, k, "") - 60)
                 // Small penalty so an app or command wins a tie with a settings page of the same name.
-                if (s >= 0) scored += Item.Setting(e) to s - 40 + Usage.boost("set:" + e.id)
+                if (s >= 0) put(s - 40 + Usage.boost("set:" + e.id)) { Item.Setting(e) }
             }
             val o = Item.OrbitSettings
             var s = Matcher.score(q, o.norm, "os")
             for (k in o.keywords) s = maxOf(s, Matcher.score(q, k, "") - 60)
-            if (s >= 0) scored += o to s - 60
+            if (s >= 0) put(s - 60) { o }
         }
 
         scored.sortByDescending { it.second }
+        val fileRows = if (filter == Filter.ALL) files(ctx, trimmed, onAsync, 3) else emptyList()
         val tail = if (filter == Filter.ALL) (if (askPrefix == null) 2 else 1) else 0
-        val room = MAX - out.size - tail
-        scored.take(room.coerceAtLeast(0)).forEach { out += it.first }
+        val room = MAX - out.size - tail - fileRows.size
+        scored.take(room.coerceAtLeast(0)).forEach { out += it.first() }
+        out += fileRows
         if (filter == Filter.ALL) {
-            if (askPrefix == null) out += ask(ctx, raw.trim())
-            out += Item.Web(raw.trim())
+            if (askPrefix == null) out += ask(ctx, trimmed)
+            out += Item.Web(trimmed)
         }
-        return out
+        return out.take(MAX)
+    }
+
+    private fun files(ctx: Context, q: String, onAsync: () -> Unit, limit: Int): List<Item> {
+        if (!FileSearch.allowed()) {
+            return if (limit == MAX) listOf(Item.Permission(
+                "Allow file access to search files",
+                "Android's \"All files access\" lets ORBIT search names of your documents, PDFs and downloads",
+                android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+            )) else emptyList()
+        }
+        if (q.length < 2) return emptyList()
+        val hit = FileSearch.cached(q)
+        if (hit == null) { FileSearch.request(ctx, q, onAsync); return emptyList() }
+        return hit.take(limit).map { Item.File(it, it.describe(ctx) + "  ·  Space preview") }
+    }
+
+    private fun money(ctx: Context, m: Currency.Query, onAsync: () -> Unit): Item {
+        val amt = if (m.amount % 1.0 == 0.0) m.amount.toLong().toString() else m.amount.toString()
+        val rates = Currency.rates(ctx, m.from, onAsync)
+            ?: return Item.Money(m, null, "Converting $amt ${m.from} → ${m.to}…", "Getting today's rates (once a day, then cached)")
+        val rate = rates.rates[m.to]
+            ?: return Item.Money(m, null, "No ${m.to} rate available", "${rates.source}, ${rates.date}")
+        val v = m.amount * rate
+        return Item.Money(
+            m, v, Currency.format(v, m.to),
+            "$amt ${m.from} → ${m.to}  ·  1 ${m.from} = ${"%.4f".format(rate)} ${m.to}  ·  ${rates.date}  ·  ${rates.source}",
+        )
     }
 
     fun ask(ctx: Context, q: String) = Item.Ask(

@@ -4,5 +4,5 @@
     <string name="settings_title">ORBIT settings</string>
     <string name="settings_short">Settings</string>
     <string name="a11y_label">ORBIT keyboard hotkey</string>
-    <string name="a11y_desc">Lets ORBIT listen for its keyboard shortcut (Alt + Space by default) so you can open it from any app. ORBIT only checks key presses for that shortcut. It does not read what is on your screen and does not save or send anything you type.</string>
+    <string name="a11y_desc">Lets ORBIT listen for its keyboard shortcuts (Alt + Space to open, Alt + Shift + S for an area screenshot) from any app, and show its panel, timer and screenshot tool on top. ORBIT only checks key presses for those shortcuts, and only captures the screen when you ask for a screenshot. It does not read what is on your screen and does not save or send anything you type.</string>
 </resources>

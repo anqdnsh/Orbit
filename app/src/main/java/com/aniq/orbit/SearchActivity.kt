@@ -30,8 +30,14 @@ class SearchActivity : Activity(), OrbitView.Host {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // First launch after install: show the welcome guide instead.
+        if (!GuideActivity.done(this)) {
+            startActivity(android.content.Intent(this, GuideActivity::class.java))
+            finish()
+            return
+        }
         current = this
-        val blur = windowManager.isCrossWindowBlurEnabled
+        val blur = !Palette.reduced(this) && windowManager.isCrossWindowBlurEnabled
 
         window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         view = OrbitView(this, this, opaque = !blur)
@@ -57,6 +63,7 @@ class SearchActivity : Activity(), OrbitView.Host {
     override fun dismiss() {
         if (leaving) return
         leaving = true
+        if (!::view.isInitialized) { finish(); return }
         view.animateOut { finishQuietly() }
     }
 

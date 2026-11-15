@@ -4,6 +4,12 @@
     <!-- Quick AI: only used to reach the AI provider you choose. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- File search (optional, you grant "All files access"): searches file names in Android's own index. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <!-- Focus timer: wake exactly when it ends, and a short buzz. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Optional, granted by you in Settings: brightness / auto-rotate, and Do Not Disturb. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
@@ -54,6 +60,17 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+
+        <activity
+            android:name=".GuideActivity"
+            android:exported="false"
+            android:label="Welcome to ORBIT"
+            android:excludeFromRecents="true"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize" />
+
+        <receiver
+            android:name=".tools.TimerAlarmReceiver"
+            android:exported="false" />
 
         <activity
             android:name=".SettingsActivity"

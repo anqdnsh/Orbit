@@ -29,6 +29,7 @@ class SettingsActivity : Activity() {
 
     private lateinit var pal: Palette
     private lateinit var status: TextView
+    private lateinit var perf: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         pal = Palette.current(this)
@@ -108,6 +109,26 @@ class SettingsActivity : Activity() {
                 Prefs.setTheme(this@SettingsActivity, ids[i])
                 recreate()
             })
+            addView(text("Reduce effects", 15f, pal.text, bold = true).also { pad(it, top = 12f) })
+            addView(radios(
+                listOf("Frosted glass (blur behind the panel)", "Solid panel, no blur (saves battery and GPU)"),
+                if (Palette.reduced(this@SettingsActivity)) 1 else 0,
+            ) { i -> Prefs.of(this@SettingsActivity).edit().putBoolean("reduce_effects", i == 1).apply() })
+            addView(button("Show welcome guide") {
+                startActivity(Intent(this@SettingsActivity, GuideActivity::class.java))
+            })
+        })
+
+        // Performance
+        col.addView(card {
+            addView(text("Performance", 18f, pal.text, bold = true))
+            perf = text("", 14f, pal.sub)
+            addView(perf)
+            addView(text(
+                "ORBIT keeps a panel ready and reuses it, does no background work, and gives memory back when " +
+                    "Android asks. Numbers update as you use it.",
+                12f, pal.sub
+            ))
         })
 
         // System controls
@@ -215,11 +236,15 @@ class SettingsActivity : Activity() {
                 "Enter / Tab (in Quick AI)" to "Ask a follow-up",
                 "Ctrl + N (in Quick AI)" to "Start a new question",
                 "Esc (in Quick AI)" to "Back to search",
-                "Ctrl + Tab" to "Switch filter: All, Apps, System, Settings",
-                "Ctrl + C" to "Copy a calculator or AI answer",
+                "Ctrl + Tab" to "Switch filter: All, Apps, Files, System, Settings",
+                "Ctrl + /" to "Show all shortcuts inside ORBIT",
+                "Alt + Shift + S" to "Area screenshot from anywhere (saved and copied)",
+                "↓ then Space  /  Shift + Space" to "Preview the highlighted file",
+                "Space (on the timer)" to "Pause / resume the focus timer",
+                "Ctrl + C" to "Copy a calculator, currency or AI answer",
                 "Ctrl + Backspace" to "Clear the search",
                 "Ctrl + ," to "ORBIT settings",
-                "Esc" to "Close",
+                "Esc" to "Clear the search, press again to close",
             )
             for ((k, v) in keys) addView(LinearLayout(this@SettingsActivity).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -246,6 +271,16 @@ class SettingsActivity : Activity() {
         status.text = if (on) "● On: ${Prefs.hotkey(this).label} opens ORBIT from any app"
         else "○ Off: switch on the ORBIT hotkey in Accessibility"
         status.setTextColor(if (on) pal.accent else pal.sub)
+        val rt = Runtime.getRuntime()
+        val heapMb = (rt.totalMemory() - rt.freeMemory()) / 1_048_576.0
+        val pssMb = android.os.Debug.getPss() / 1024.0
+        perf.text = buildString {
+            append(if (Stats.opens > 0) "Panel open time: last ${Stats.lastOpenMs} ms, average %.0f ms (${Stats.opens} opens)\n".format(Stats.avgOpenMs)
+                   else "Panel open time: open ORBIT with the hotkey to measure\n")
+            append("Last search: %.2f ms\n".format(com.aniq.orbit.search.SearchEngine.lastSearchMicros / 1000.0))
+            append("Memory: %.0f MB total, %.1f MB app data\n".format(pssMb, heapMb))
+            append("Apps indexed: ${com.aniq.orbit.search.AppIndex.apps.size}")
+        }
     }
 
     // ---------- small builders ----------

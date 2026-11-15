@@ -14,6 +14,8 @@ import android.provider.Settings
 import android.view.KeyEvent
 import android.widget.Toast
 import com.aniq.orbit.search.Glyph
+import com.aniq.orbit.tools.FocusTimer
+import com.aniq.orbit.tools.KeepAwake
 import com.aniq.orbit.search.Text
 import kotlin.math.roundToInt
 
@@ -23,7 +25,8 @@ import kotlin.math.roundToInt
  *  - runs straight away once you have granted a one-time permission,
  *  - opens the right Settings page or pop-up panel when Android doesn't let apps do it.
  */
-enum class How { GLOBAL, MEDIA, VOLUME, VOLUME_SET, TORCH, BRIGHTNESS, ROTATION, DND, SETTINGS, HEALTH, DEVICE_CARE, DEX }
+enum class How { GLOBAL, MEDIA, VOLUME, VOLUME_SET, TORCH, BRIGHTNESS, ROTATION, DND, SETTINGS, HEALTH, DEVICE_CARE, DEX,
+    AREA, FOCUS, TIMER, TIMER_SHOW, TIMER_END, AWAKE, AWAKE_OFF }
 
 class CommandEntry(
     val id: String,
@@ -52,6 +55,9 @@ object Commands {
 
     val VOLUME_SET = CommandEntry("volume_set", "Set volume", listOf(), How.VOLUME_SET)
     val BRIGHTNESS_SET = CommandEntry("brightness_set", "Set brightness", listOf(), How.BRIGHTNESS, arg = 1)
+    val FOCUS_SET = CommandEntry("focus_set", "Focus", listOf(), How.FOCUS, glyph = Glyph.TIMER)
+    val TIMER_SET = CommandEntry("timer_set", "Timer", listOf(), How.TIMER, glyph = Glyph.TIMER)
+    val AWAKE_SET = CommandEntry("awake_set", "Keep awake", listOf(), How.AWAKE, glyph = Glyph.SUN)
 
     val entries: List<CommandEntry> = listOf(
         // Power: Android lets apps open the power menu; you tap Restart / Power off there.
@@ -79,6 +85,20 @@ object Commands {
             "android.os.storage.action.MANAGE_STORAGE", "android.settings.INTERNAL_STORAGE_SETTINGS"),
         page("battery_usage", "Battery usage", listOf("battery", "battery usage", "drain"),
             "android.intent.action.POWER_USAGE_SUMMARY"),
+
+        // Laptop-style tools.
+        CommandEntry("area", "Screenshot area", listOf("area screenshot", "snip", "crop screenshot", "capture area", "screenshot", "cmd shift 4"),
+            How.AREA, glyph = Glyph.CROP),
+        CommandEntry("focus25", "Focus for 25 min", listOf("focus", "pomodoro", "deep work", "study"), How.FOCUS, arg = 25, glyph = Glyph.TIMER),
+        CommandEntry("focus50", "Focus for 50 min", listOf("focus", "deep work", "study"), How.FOCUS, arg = 50, glyph = Glyph.TIMER),
+        CommandEntry("timer5", "Timer for 5 min", listOf("timer", "countdown"), How.TIMER, arg = 5, glyph = Glyph.TIMER),
+        CommandEntry("timer10", "Timer for 10 min", listOf("timer", "countdown"), How.TIMER, arg = 10, glyph = Glyph.TIMER),
+        CommandEntry("timer_show", "Show timer", listOf("timer", "focus", "show timer"), How.TIMER_SHOW, glyph = Glyph.TIMER),
+        CommandEntry("timer_end", "End timer", listOf("stop timer", "end timer", "cancel timer", "end focus"), How.TIMER_END, glyph = Glyph.TIMER),
+        CommandEntry("awake30", "Keep awake for 30 min", listOf("keep awake", "caffeinate", "awake", "stay on", "no sleep"), How.AWAKE, arg = 30, glyph = Glyph.SUN),
+        CommandEntry("awake60", "Keep awake for 1 hour", listOf("keep awake", "caffeinate", "awake"), How.AWAKE, arg = 60, glyph = Glyph.SUN),
+        CommandEntry("awake0", "Keep awake until I turn it off", listOf("keep awake", "caffeinate", "awake", "always on"), How.AWAKE, arg = 0, glyph = Glyph.SUN),
+        CommandEntry("awake_off", "Keep awake off", listOf("keep awake off", "caffeinate off", "let sleep", "awake off"), How.AWAKE_OFF, glyph = Glyph.SUN),
 
         // DeX: no app can switch it directly, so open Quick Settings with the DeX tile ready.
         CommandEntry("dex", "DeX", listOf("dex", "desktop mode", "samsung dex", "enter dex", "exit dex"), How.DEX, glyph = Glyph.ORBIT),
@@ -123,12 +143,32 @@ object Commands {
         val s = raw.trim()
         volRegex.find(s)?.let { return VOLUME_SET to it.groupValues[1].toInt().coerceIn(0, 100) }
         brightRegex.find(s)?.let { return BRIGHTNESS_SET to it.groupValues[1].toInt().coerceIn(0, 100) }
+        focusRegex.find(s)?.let { return FOCUS_SET to minutes(it.groupValues[1], it.groupValues[2], 25) }
+        timerRegex.find(s)?.let { return TIMER_SET to minutes(it.groupValues[1], it.groupValues[2], 5) }
+        awakeRegex.find(s)?.let { return AWAKE_SET to minutes(it.groupValues[1], it.groupValues[2], 30) }
         return null
     }
+
+    private val unitPart = "\\s*(m|min|mins|minutes?|h|hr|hrs|hours?)?"
+    private val focusRegex = Regex("^(?:focus|pomodoro)\\s+(\\d{1,3})$unitPart$", RegexOption.IGNORE_CASE)
+    private val timerRegex = Regex("^timer\\s+(\\d{1,3})$unitPart$", RegexOption.IGNORE_CASE)
+    private val awakeRegex = Regex("^(?:awake|caffeinate|keep awake)\\s+(\\d{1,3})$unitPart$", RegexOption.IGNORE_CASE)
+
+    private fun minutes(num: String, unit: String, def: Int): Int {
+        val n = num.toIntOrNull() ?: return def
+        return (if (unit.startsWith("h", ignoreCase = true)) n * 60 else n).coerceIn(1, 24 * 60)
+    }
+
+    private fun span(m: Int) = if (m % 60 == 0 && m >= 60) "${m / 60} hour${if (m >= 120) "s" else ""}" else "$m min"
 
     fun title(ctx: Context, e: CommandEntry, param: Int?): String = when {
         e.how == How.HEALTH -> Health.read(ctx).title
         e.how == How.DEX -> when (Dex.isOn(ctx)) { true -> "Exit DeX"; false -> "Enter DeX"; null -> "Enter / exit DeX" }
+        e.how == How.TIMER_SHOW && FocusTimer.state != FocusTimer.State.IDLE ->
+            "Show timer (${FocusTimer.label}, ${(FocusTimer.remaining() + 59_999) / 60_000} min left)"
+        e.how == How.FOCUS && param != null -> "Focus for ${span(param)}"
+        e.how == How.TIMER && param != null -> "Timer for ${span(param)}"
+        e.how == How.AWAKE && param != null -> "Keep awake for ${span(param)}"
         param == null -> e.title
         e.how == How.VOLUME_SET -> "Set volume to $param%"
         else -> "Set brightness to $param%"
@@ -152,12 +192,46 @@ object Commands {
             How.DEVICE_CARE -> if (e.arg == 1) "Opens Device care › Memory, then tap Clean now" else "Opens Device care"
             How.DEX -> if (OrbitAccessibilityService.instance != null) "Opens Quick Settings, then tap the DeX tile"
             else "Needs the ORBIT hotkey switch (opens setup)"
+            How.AREA, How.FOCUS, How.TIMER, How.TIMER_SHOW, How.AWAKE ->
+                if (OrbitAccessibilityService.instance == null) "Needs the ORBIT hotkey switch (opens setup)"
+                else when (e.how) {
+                    How.AREA -> "Drag a box  ·  saved and copied  ·  Alt + Shift + S anywhere"
+                    How.FOCUS -> if (ctx.getSystemService(NotificationManager::class.java).isNotificationPolicyAccessGranted)
+                        "Ring timer  ·  turns on Do Not Disturb until it ends" else "Ring timer  ·  allow DND control in settings to silence alerts"
+                    How.TIMER -> "Ring timer  ·  chimes when done"
+                    How.TIMER_SHOW -> if (FocusTimer.state == FocusTimer.State.IDLE) "No timer running" else "Opens the timer"
+                    else -> if (KeepAwake.isOn) "Now: ${KeepAwake.label()}" else "Screen stays on, then sleeps normally"
+                }
+            How.TIMER_END -> if (FocusTimer.state == FocusTimer.State.IDLE) "No timer running" else "Stops the timer"
+            How.AWAKE_OFF -> "Now: ${KeepAwake.label()}"
         }
     }
 
     /** Returns true when the ORBIT panel should close. */
     fun run(ctx: Context, e: CommandEntry, param: Int?): Boolean = when (e.how) {
         How.HEALTH -> DeviceCare.openDashboard(ctx)
+        How.AREA, How.FOCUS, How.TIMER, How.TIMER_SHOW, How.AWAKE -> {
+            val svc = OrbitAccessibilityService.instance
+            if (svc == null) {
+                toast(ctx, "Turn on the ORBIT hotkey switch to use this")
+                ctx.startActivity(Intent(ctx, SettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } else when (e.how) {
+                How.AREA -> svc.area.start()
+                How.FOCUS, How.TIMER -> {
+                    FocusTimer.start(ctx, param ?: e.arg, isFocus = e.how == How.FOCUS)
+                    main.postDelayed({ svc.timer.showCard() }, 180)
+                }
+                How.TIMER_SHOW -> if (FocusTimer.state != FocusTimer.State.IDLE) main.postDelayed({ svc.timer.showCard() }, 180)
+                else -> {
+                    val m = param ?: e.arg
+                    KeepAwake.start(svc, if (m == 0) null else m)
+                    toast(ctx, "Keep awake: " + KeepAwake.label())
+                }
+            }
+            true
+        }
+        How.TIMER_END -> { FocusTimer.end(ctx); true }
+        How.AWAKE_OFF -> { KeepAwake.stop(); toast(ctx, "Keep awake off"); true }
         How.DEVICE_CARE -> if (e.arg == 1) DeviceCare.openMemory(ctx) else DeviceCare.openDashboard(ctx)
         How.DEX -> run(ctx, CommandEntry("qs", "", emptyList(), How.GLOBAL, AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS), null)
         How.GLOBAL -> {

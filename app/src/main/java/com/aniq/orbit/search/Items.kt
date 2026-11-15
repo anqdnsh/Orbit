@@ -24,9 +24,9 @@ class SettingEntry(
     val keywordNorms = keywords.map { Text.normalize(it) }
 }
 
-enum class Filter(val label: String) { ALL("All"), APPS("Apps"), SYSTEM("System"), SETTINGS("Settings") }
+enum class Filter(val label: String) { ALL("All"), APPS("Apps"), FILES("Files"), SYSTEM("System"), SETTINGS("Settings") }
 
-enum class Glyph { SEARCH, GEAR, GLOBE, CALC, ORBIT, POWER, BOLT, SPARK, PULSE }
+enum class Glyph { SEARCH, GEAR, GLOBE, CALC, ORBIT, POWER, BOLT, SPARK, PULSE, FILE, TIMER, CROP, SUN, CASH }
 
 sealed class Item {
     abstract val title: String
@@ -63,6 +63,24 @@ sealed class Item {
     class Ask(val query: String, override val subtitle: String) : Item() {
         override val title = "Ask AI: “$query”"
         override val glyph = Glyph.SPARK
+    }
+
+    class File(val entry: FileEntry, override val subtitle: String) : Item() {
+        override val title = entry.name
+        override val usageKey = "file:" + entry.id
+        override val glyph = Glyph.FILE
+    }
+
+    /** Currency conversion; [value] is null while today's rates are being fetched. */
+    class Money(
+        val q: Currency.Query, val value: Double?, override val title: String, override val subtitle: String,
+    ) : Item() {
+        override val glyph = Glyph.CASH
+    }
+
+    /** A row that takes you to a permission page (e.g. "Allow file access"). */
+    class Permission(override val title: String, override val subtitle: String, val action: String) : Item() {
+        override val glyph = Glyph.GEAR
     }
 
     class Calc(val expr: String, val value: String) : Item() {

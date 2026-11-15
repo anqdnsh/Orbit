@@ -11,7 +11,10 @@ import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
+import com.aniq.orbit.search.CalcHistory
+import com.aniq.orbit.search.Currency
 import com.aniq.orbit.search.Item
+import android.provider.Settings
 import com.aniq.orbit.search.Usage
 
 /** Opens a result. Pop-up and side-by-side are requests: One UI decides if the current mode allows them. */
@@ -24,7 +27,20 @@ object Launcher {
                 is Item.App -> openApp(ctx, item, mode)
                 is Item.Setting -> openSetting(ctx, item, mode)
                 is Item.Command -> Commands.run(ctx, item.entry, item.param)
-                is Item.Calc -> copy(ctx, item.value)
+                is Item.Calc -> { CalcHistory.add(ctx, item.expr, item.value); copy(ctx, item.value) }
+                is Item.Money -> item.value?.let { v ->
+                    val plain = Currency.format(v, item.q.to)
+                    CalcHistory.add(ctx, item.q.amount.toString().removeSuffix(".0") + " " + item.q.from + " → " + item.q.to, plain)
+                    copy(ctx, "%.2f".format(java.util.Locale.US, v))
+                } ?: false
+                is Item.File -> openFile(ctx, item, mode)
+                is Item.Permission -> {
+                    val i = Intent(item.action)
+                    if (item.action == Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION ||
+                        item.action == Settings.ACTION_MANAGE_WRITE_SETTINGS
+                    ) i.data = Uri.parse("package:" + ctx.packageName)
+                    start(ctx, i, Mode.NORMAL)
+                }
                 is Item.Ask -> false // handled inside the panel (Quick AI)
                 is Item.Web -> openWeb(ctx, item.query, mode)
                 Item.OrbitSettings -> start(ctx, Intent(ctx, SettingsActivity::class.java), mode)
@@ -57,6 +73,18 @@ object Launcher {
         val opts = if (mode == Mode.POPUP) popupOptions(ctx) else null
         la.startMainActivity(info.componentName, info.user, null, opts)
         return true
+    }
+
+    private fun openFile(ctx: Context, item: Item.File, mode: Mode): Boolean {
+        val e = item.entry
+        val view = Intent(Intent.ACTION_VIEW).setDataAndType(e.uri, e.mime ?: "*/*")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        return try {
+            start(ctx, view, mode)
+        } catch (_: Exception) {
+            // No app claims this type: let the user pick one.
+            start(ctx, Intent.createChooser(view, e.name), Mode.NORMAL)
+        }
     }
 
     private fun openSetting(ctx: Context, item: Item.Setting, mode: Mode): Boolean {

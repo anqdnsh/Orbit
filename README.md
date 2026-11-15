@@ -1,6 +1,6 @@
 # ORBIT
 
-A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Android 13+), built for the Book Cover Keyboard. It's liquid glass in light or dark mode, it has no libraries, and it opens instantly.
+A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Android 13+), built for the Book Cover Keyboard. It's frosted glass in light or charcoal dark with a red accent, it has no libraries, and it opens instantly. A welcome guide walks you through setup on first launch.
 
 ## What Phase 1 does
 
@@ -12,6 +12,24 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 - **Light / Dark / Match system**, set in ORBIT settings (search "orbit" or press Ctrl + ,).
 - **Liquid glass:** uses Android's real cross-window blur. When One UI turns blur off (for example in battery saver), it switches to a frosted tint.
 - **Other ways in:** the app icon, a Quick Settings tile, and Android's own per-app keyboard shortcut if your One UI version offers it.
+
+## Laptop tools
+
+- **Area screenshot:** press **Alt + Shift + S** anywhere (or type "snip"). The screen freezes, you drag a box, and the crop is saved to Pictures/Screenshots/ORBIT and copied. Enter takes the whole screen. Apps that block screenshots (e.g. banking) come out black.
+- **File search (Spotlight-style):** type a file name, or use the **Files** filter. Press **↓ then Space** (or **Shift + Space**) to preview images, videos, PDFs (first page) and text, and ↓ ↑ to flip through files. It needs Android's "All files access" and searches the system's own file index, so nothing scans in the background.
+- **Focus timer:** `focus 25`, `focus 50`, `timer 10`, `timer 1h`. A glass card with a smooth 120 Hz ring and rolling digits. Space pauses, + adds 5 min, and Esc shrinks it to a pill at the top. Focus sessions turn on Do Not Disturb (if allowed) and put it back afterwards. It chimes when done, even if the tablet was asleep.
+- **Keep awake:** `awake 30`, `awake 1h`, "keep awake until I turn it off", "keep awake off". It uses an invisible keep-screen-on window, with no wake locks.
+- **Calculator card:** typing maths shows a big answer, your recent results and a small keypad for touch.
+- **Currency:** `100 usd to myr`, `rm50 in sgd`, `250 eur`. Rates come from Frankfurter (central-bank reference rates, no key), with ExchangeRate-API as a backup. They're fetched only when you convert, then cached for 12 hours.
+- **Ctrl + /** shows every shortcut inside ORBIT.
+
+## Speed and resources
+
+- The hotkey service keeps a panel built and reuses it, so opening is just showing a ready window. It's prepared while the tablet is idle.
+- Search scores everything first and only builds the rows that will show. File search is debounced and runs off the main thread.
+- No background work: no polling, no timers, no wake locks. The 120 Hz request only applies while ORBIT is on screen.
+- When Android asks for memory back, the spare panel and icon cache are dropped.
+- **Reduce effects** (settings) turns off the blur. **Performance** (settings) shows real open time, search time and memory.
 
 ## Quick AI
 

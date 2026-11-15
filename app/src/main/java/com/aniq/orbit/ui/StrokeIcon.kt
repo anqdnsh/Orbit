@@ -92,6 +92,35 @@ class StrokeIcon(private val glyph: Glyph, color: Int) : Drawable() {
                 path.lineTo(21.5f, 12f)
                 c.drawPath(path, p)
             }
+            Glyph.FILE -> {
+                path.reset()
+                path.moveTo(6f, 3f); path.lineTo(14f, 3f); path.lineTo(19f, 8f); path.lineTo(19f, 21f)
+                path.lineTo(6f, 21f); path.close()
+                c.drawPath(path, p)
+                c.drawLine(14f, 3f, 14f, 8f, p); c.drawLine(14f, 8f, 19f, 8f, p)
+            }
+            Glyph.TIMER -> {
+                c.drawCircle(12f, 13.5f, 7.5f, p)
+                c.drawLine(12f, 13.5f, 12f, 9.5f, p)
+                c.drawLine(10f, 2.5f, 14f, 2.5f, p)
+            }
+            Glyph.CROP -> {
+                path.reset()
+                path.moveTo(6f, 2.5f); path.lineTo(6f, 18f); path.lineTo(21.5f, 18f)
+                path.moveTo(2.5f, 6f); path.lineTo(18f, 6f); path.lineTo(18f, 21.5f)
+                c.drawPath(path, p)
+            }
+            Glyph.SUN -> {
+                c.drawCircle(12f, 12f, 4f, p)
+                for (i in 0 until 8) {
+                    c.save(); c.rotate(i * 45f, 12f, 12f); c.drawLine(12f, 2.5f, 12f, 4.5f, p); c.restore()
+                }
+            }
+            Glyph.CASH -> {
+                r.set(2.5f, 6f, 21.5f, 18f)
+                c.drawRoundRect(r, 2f, 2f, p)
+                c.drawCircle(12f, 12f, 2.8f, p)
+            }
             Glyph.ORBIT -> {
                 c.drawCircle(12f, 12f, 3f, p)
                 c.save()
