@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icon: a black hole in outline (dome sitting on its disk). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-<group android:pivotX="54" android:pivotY="54" android:rotation="-24"><path android:pathData="M23,54 A31,10.5 0 1,0 85,54 A31,10.5 0 1,0 23,54" android:strokeColor="#FFFFFFFF" android:strokeWidth="2.6" android:fillColor="#00000000"/></group><path android:pathData="M62.5,62.5 L71.5,71.5" android:strokeColor="#FFFFFFFF" android:strokeWidth="6.2" android:strokeLineCap="round"/><path android:pathData="M37.50,52.00 a14.50,14.50 0 1,0 29.00,0 a14.50,14.50 0 1,0 -29.00,0" android:strokeColor="#FFFFFFFF" android:strokeWidth="4" android:fillColor="#00000000"/><path android:pathData="M76.25,38.87 a2.90,2.90 0 1,0 5.80,0 a2.90,2.90 0 1,0 -5.80,0" android:fillColor="#FFFFFFFF"/></vector>
+    <group android:pivotX="54" android:pivotY="56.2" android:rotation="-7">
+        <path android:pathData="M18,56.2 A36,9.4 0 1,0 90,56.2 A36,9.4 0 1,0 18,56.2"
+            android:strokeColor="#FFFFFFFF" android:strokeWidth="3" android:fillColor="#00000000" />
+        <path android:pathData="M41.6,56.2 A12.4,12.4 0 0,1 66.4,56.2 Z" android:fillColor="#FFFFFFFF" />
+        <path android:pathData="M37.6,56.2 A16.4,16.4 0 0,1 70.4,56.2"
+            android:strokeColor="#FFFFFFFF" android:strokeWidth="1.6" android:fillColor="#00000000" />
+    </group>
+</vector>

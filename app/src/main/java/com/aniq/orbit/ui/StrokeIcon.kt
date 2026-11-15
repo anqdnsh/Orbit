@@ -122,14 +122,15 @@ class StrokeIcon(private val glyph: Glyph, color: Int) : Drawable() {
                 c.drawCircle(12f, 12f, 2.8f, p)
             }
             Glyph.ORBIT -> {
-                // OrbitSearch mark: a lens-planet with an orbit ring, as in the app icon.
+                // OrbitSearch mark: a black hole (dome on its disk), as in the app icon.
                 c.save()
-                c.rotate(-24f, 12f, 12f)
-                r.set(1.5f, 8.4f, 22.5f, 15.6f)
+                c.rotate(-7f, 12f, 13f)
+                r.set(1.5f, 10f, 22.5f, 16f)
                 c.drawOval(r, p)
+                r.set(7.2f, 8.2f, 16.8f, 17.8f)
+                c.drawArc(r, 180f, 180f, false, p)
+                c.drawLine(7.2f, 13f, 16.8f, 13f, p)
                 c.restore()
-                c.drawCircle(11.6f, 11.4f, 4.8f, p)
-                c.drawLine(15f, 15f, 19f, 19f, p)
             }
         }
         c.restore()
