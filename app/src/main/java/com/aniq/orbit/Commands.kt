@@ -190,7 +190,7 @@ object Commands {
             How.SETTINGS -> if (e.settings.firstOrNull()?.contains(".panel.") == true) "Opens Settings panel" else "Opens Settings"
             How.HEALTH -> Health.read(ctx).subtitle + "  ·  ↵ Device care"
             How.DEVICE_CARE -> if (e.arg == 1) "Opens Device care › Memory, then tap Clean now" else "Opens Device care"
-            How.DEX -> if (OrbitAccessibilityService.instance != null) "Opens Quick Settings, then tap the DeX tile"
+            How.DEX -> if (OrbitAccessibilityService.instance != null) "System · Switches straight away"
             else "Needs the OrbitSearch hotkey switch (opens setup)"
             How.AREA, How.FOCUS, How.TIMER, How.TIMER_SHOW, How.AWAKE ->
                 if (OrbitAccessibilityService.instance == null) "Needs the OrbitSearch hotkey switch (opens setup)"
@@ -233,7 +233,17 @@ object Commands {
         How.TIMER_END -> { FocusTimer.end(ctx); true }
         How.AWAKE_OFF -> { KeepAwake.stop(); toast(ctx, "Keep awake off"); true }
         How.DEVICE_CARE -> if (e.arg == 1) DeviceCare.openMemory(ctx) else DeviceCare.openDashboard(ctx)
-        How.DEX -> run(ctx, CommandEntry("qs", "", emptyList(), How.GLOBAL, AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS), null)
+        How.DEX -> {
+            val svc = OrbitAccessibilityService.instance
+            if (svc == null) {
+                toast(ctx, "Turn on the OrbitSearch hotkey switch to use this")
+                ctx.startActivity(Intent(ctx, SettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } else {
+                // Let the panel close first so Quick Settings opens over a clean screen.
+                main.postDelayed({ com.aniq.orbit.tools.DexSwitch.toggle(svc) }, 120)
+            }
+            true
+        }
         How.GLOBAL -> {
             val svc = OrbitAccessibilityService.instance
             if (svc == null) {

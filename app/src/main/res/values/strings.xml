@@ -4,5 +4,5 @@
     <string name="settings_title">OrbitSearch settings</string>
     <string name="settings_short">Settings</string>
     <string name="a11y_label">OrbitSearch keyboard hotkey</string>
-    <string name="a11y_desc">Lets OrbitSearch listen for its keyboard shortcuts (Alt + Space to open, Alt + Shift + S for an area screenshot) from any app, and show its panel, timer and screenshot tool on top. OrbitSearch only checks key presses for those shortcuts, and only captures the screen when you ask for a screenshot. It does not read what is on your screen and does not save or send anything you type.</string>
+    <string name="a11y_desc">Lets OrbitSearch listen for its keyboard shortcuts (Alt + Space to open, Alt + Shift + S for an area screenshot) from any app, and show its panel, timer and screenshot tool on top. OrbitSearch only checks key presses for those shortcuts, and only captures the screen when you ask for a screenshot. When you run "dex" it reads the Quick Settings panel only to find and tap the DeX tile. Otherwise it does not read what is on your screen and does not save or send anything you type.</string>
 </resources>

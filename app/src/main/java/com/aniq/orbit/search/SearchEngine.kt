@@ -56,6 +56,8 @@ object SearchEngine {
             for (e in Commands.entries) {
                 var s = Matcher.score(q, e.norm, e.initials)
                 for (k in e.keywordNorms) s = maxOf(s, Matcher.score(q, k, "") - 40)
+                // Typing a command's exact name ("dex", "restart") puts it first, so Enter runs it.
+                if (s >= 0 && (q == e.norm || q in e.keywordNorms)) s += 1000
                 if (s >= 0) put(s - 20 + Usage.boost("cmd:" + e.id)) { command(ctx, e, null) }
             }
         }

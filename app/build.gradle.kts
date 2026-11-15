@@ -17,8 +17,8 @@ android {
         applicationId = "com.aniq.orbit"
         minSdk = 33          // Android 13 — Galaxy Tab S9 series and newer
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.7.1"
+        versionCode = 9
+        versionName = "0.7.2"
     }
 
     signingConfigs {

@@ -37,7 +37,7 @@ A Raycast / Alfred-style launcher for Galaxy Tab (Tab S9 Ultra and newer, Androi
 - **Clean RAM / Optimise now:** open Samsung's Battery and device care (Memory › Clean now stops background apps). Since Android 14, apps can't close other apps themselves.
 - **Free up storage:** Android's free-up-space screen.
 - **Quit all apps** ("close all", "clear recents"): opens Recent apps, then you tap Close all.
-- **DeX:** shows Enter DeX or Exit DeX and opens Quick Settings with the DeX tile ready. No app can switch DeX directly. In DeX the panel is a little narrower.
+- **DeX:** type `dex` and press Enter to switch in or out straight away. Android has no DeX switch for apps, so OrbitSearch opens Quick Settings, taps the DeX tile for you and closes the shade (the tile must be in Quick Settings). In DeX the panel is a little narrower.
 
 ## System controls
 
