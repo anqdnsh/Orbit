@@ -59,8 +59,14 @@ class TimerOverlay(private val ctx: Context) {
         PixelFormat.TRANSLUCENT,
     ).apply {
         gravity = Gravity.BOTTOM or Gravity.END
-        x = ctx.dpi(24f) - shadowPad
-        y = ctx.dpi(72f) - shadowPad // clear of the taskbar / gesture bar
+        // Tucked into the very corner: just above the taskbar or gesture bar, whatever is showing.
+        val bars = runCatching {
+            wm.currentWindowMetrics.windowInsets.getInsets(
+                android.view.WindowInsets.Type.navigationBars() or android.view.WindowInsets.Type.tappableElement()
+            )
+        }.getOrNull()
+        x = (bars?.right ?: 0) + ctx.dpi(12f) - shadowPad
+        y = (bars?.bottom ?: 0) + ctx.dpi(12f) - shadowPad
         windowAnimations = 0 // animated by the views themselves
         this.title = title
     }
